@@ -20,11 +20,12 @@ http.createServer((req, res) => {
 
     if(path === "/" && req.method === 'GET') {
         loadFile('views/homepage.html', res);
+    } else if (path === 'profile' && req.method === 'GET' ) {
+        loadFile('views/profile.html', res);
     } else {
         res.writeHead(303, {Location: '/'});
         res.end('');
     }
-
 
 }).listen(PORT);
 
