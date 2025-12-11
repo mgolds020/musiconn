@@ -1,0 +1,21 @@
+{
+  "dependencies": {
+    "bcrypt": "^6.0.0",
+    "dotenv": "^17.2.3",
+    "jsonwebtoken": "^9.0.3",
+    "mongodb": "4.1",
+    "nodemon": "^3.1.11"
+  },
+  "name": "finalmusiconn",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "devStart": "nodemon server.js",
+    "devStartAuth": "nodemon authServer.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs"
+}
