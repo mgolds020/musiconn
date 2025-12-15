@@ -1,166 +1,311 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Post • Musiconn</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Post • Musiconn</title>
 
-  <!-- google fons and icon library -->
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
-  <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- google fons and icon library -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
 
-  <style>
-    :root { --red:#e63946; --gray:#666; --black:#111; --light:#f4f4f4; }
-    * {margin:0; padding:0; box-sizing:border-box; font-family:'Inter',sans-serif;}
+    <style>
+        :root { 
+            --red:#e63946;
+            --gray:#666; 
+            --black:#111; 
+            --light:#f4f4f4; 
+        }
 
-    body { background:white; }
+        * {
+            margin:0; 
+            padding:0; 
+            box-sizing:border-box; 
+            font-family:'Inter',sans-serif;
+        }
 
-    header {
-      height:60px; 
-      border-bottom:1px solid #eee;
-      display:flex; 
-      align-items:center; 
-      justify-content:space-between;
-      padding:0 24px;
-    }
+        body { 
+            background:#fff; 
+        }
 
-    header h1 {
-      font-size: 18px;
-      font-weight: 600;
-    }
+        header {
+            position: sticky;
+            top: 0;
+            height: 60px;
+            background: #fff; /* prevents transparency when scrolling */
+            border-bottom: 1px solid #eee;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1500; /* stays above content but below menu button */
+        }
 
-    .icon-btn {
+        header h1 {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            margin: 0;
+        }
+
+        /* MENU BUTTON — fixed so it can slide with menu */
+        #menuBtn {
+            position: fixed;
+            top: 14px;
+            left: 20px;
+            z-index: 3000;
+            transition: left 0.3s ease;
+        }
+
+        /* slide menu button with menu */
+        body.menu-open #menuBtn {
+            left: 244px;
+        }
+
+        /* PROFILE ICON — right side, absolutely positioned */
+        header .icon-btn:last-of-type {
+            position: absolute;
+            right: 24px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+
+        /* slide-out menu that overlays and doesn't push content */
+        .menu {
+            position: fixed;
+            top: 60px;
+            left: -220px;           /* start hidden off-screen */
+            width: 220px;
+            height: 100vh;
+            background: #fff;
+            border-right: 1px solid #eee;
+            padding: 24px;
+            transition: left 0.3s ease;
+            z-index: 1000;
+        }
+
+        /* when we add .open in JS, it slides in */
+        .menu.open {
+            left: 0;
+        }
+
+        /* Make menu button move with menu */
+        #menuBtn {
+            position: fixed;
+            top: 16px;
+            left: 20px;
+            z-index: 2000;
+            transition: left 0.3s ease;
+        }
+
+        /* When menu is open, shift the button to the right */
+        .menu.open ~ #menuBtn,
+        .menu.open + #menuBtn {
+            left: 244px; /* 220px menu + some margin */
+        }
+
+        .menu a {
+            display: block;
+            margin-bottom: 16px;
+            text-decoration: none;
+            color: var(--black);
+            font-weight: 500;
+        }
+
+        .menu a.active {
+        color: var(--red);
+        }
+
+        .icon-btn {
+            cursor:pointer;
+            color:var(--gray); }
+
+        .icon-btn:hover {
+            color:var(--black); 
+        }
+
+        .container {
+        max-width:900px;
+        margin:24px auto;
+        padding:0 24px;
+        }
+
+        .post-header {
+        display:flex;
+        justify-content:space-between;
+        align-items:center;
+        margin-bottom:16px;
+        }
+
+        .badge { 
+            padding:4px 8px;
+            border-radius:6px;
+            font-size:12px; 
+        }
+        .gig{
+            background:rgba(230,57,70,0.15);
+            color:var(--red);
+        } 
+        .learn{
+            background:#ddd;
+        } 
+        .jam{
+            background:#111;
+            color:rgba(255, 255, 255, 0);} 
+
+        .title { 
+            font-size:24px; 
+            font-weight:600; 
+            margin-bottom:8px; 
+        }
+        .desc { 
+            font-size:16px; color:var(--gray);
+            margin-bottom:20px;
+        }
+
+        .profile {
+        display:flex; align-items:center; gap:12px;
         cursor:pointer;
-        color:var(--gray); }
+        margin-bottom:24px;
+        }
 
-    .icon-btn:hover {
-        color:var(--black); 
-    }
+        .pfp {
+        width:48px; height:48px;
+        border-radius:50%; background:#ccc;
+        }
 
-    .container {
-      max-width:900px;
-      margin:24px auto;
-      padding:0 24px;
-    }
-
-    .post-header {
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
-      margin-bottom:16px;
-    }
-
-    .badge { 
-        padding:4px 8px;
-        border-radius:6px;
-        font-size:12px; 
-    }
-    .gig{
-        background:rgba(230,57,70,0.15);
-        color:var(--red);
-    } 
-    .learn{
-        background:#ddd;
-    } 
-    .jam{
-        background:#111;
-        color:rgba(255, 255, 255, 0);} 
-
-    .title { 
-        font-size:24px; 
-        font-weight:600; 
-        margin-bottom:8px; 
-    }
-    .desc { 
-        font-size:16px; color:var(--gray);
+        .price-box {
+        padding:10px 14px;
+        border-radius:8px;
+        background:var(--light);
+        border:1px solid #ddd;
+        font-weight:600;
+        display:inline-block;
         margin-bottom:20px;
-    }
+        }
 
-    .profile {
-      display:flex; align-items:center; gap:12px;
-      cursor:pointer;
-      margin-bottom:24px;
-    }
+        .section-title {
+        font-size:18px;
+        margin:24px 0 8px;
+        font-weight:600;
+        }
 
-    .pfp {
-      width:48px; height:48px;
-      border-radius:50%; background:#ccc;
-    }
+        .back {
+            position: absolute;
+            top: 76px;
+            left: 16px;
+            z-index: 10;
+            cursor:pointer;
+        }
 
-    .price-box {
-      padding:10px 14px;
-      border-radius:8px;
-      background:var(--light);
-      border:1px solid #ddd;
-      font-weight:600;
-      display:inline-block;
-      margin-bottom:20px;
-    }
+        .back-circle {
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            background: rgba(0,0,0,0.25);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
 
-    .section-title {
-      font-size:18px;
-      margin:24px 0 8px;
-      font-weight:600;
-    }
-  </style>
+        .back-circle svg {
+            width: 24px;
+            height: 24px;
+            stroke: white;
+        }
+
+        .back-circle:hover {
+            background: rgba(0,0,0,0.35);
+        }
+    </style>
 </head>
 <body>
 
-<header>
-  <i data-lucide="arrow-left" class="icon-btn" onclick="history.back()"></i>
-  <h1>Musiconn</h1>
-  <i data-lucide="user" class="icon-btn" onclick="location.href='profile.html'"></i></span>
-</header>
+    <header>
+        <i data-lucide="menu" class="icon-btn" id="menuBtn"></i>
+        <h1 onclick="location.href='gigs.html'" onclick="location.href='gigs.html?view=gig'">Musiconn</h1>
+        <i data-lucide="user" class="icon-btn" onclick="location.href='profile.html'"></i>
+    </header>
 
-<div class="container" id="postContainer">
-</div>
 
-<script>
-  lucide.createIcons();
+    <div class="container">
+        <nav class="menu" id="sideMenu">
+            <a href="#">Map</a>
+            <a href="gigs.html?view=gig">Gigs</a>
+            <a href="gigs.html?view=learn">Learn</a>
+            <a href="gigs.html?view=jam">Jam</a>
+        </nav>
 
-  // MOCK POST: load based on URL parameter ?id=1
-  const post = {
-    id: 1,
-    type: 'gig',
-    title: 'Looking for a drummer',
-    desc: 'We need an experienced drummer for a Friday night paid show. Must be comfortable with rock and pop.',
-    price: '$150-$250',
-    date: 'Feb 12, 2026 @ 8:00 PM',
-    location: 'Boston, MA',
-    profileName: 'Cool Band',
-  };
-
-  function loadPost() {
-    const c = document.getElementById('postContainer');
-
-    c.innerHTML = `
-      <div class="post-header">
-        <span class="badge ${post.type}">${post.type.toUpperCase()}</span>
-      </div>
-
-      <div class="title">${post.title}</div>
-      <div class="desc">${post.desc}</div>
-
-      <div class="profile" onclick="location.href='profile.html'">
-        <div class="pfp"></div>
-        <div>
-          <div style="font-weight:600;">${post.profileName}</div>
-          <div style="font-size:14px; color:var(--gray);">View Profile</div>
+        <div class="back" onclick="history.back()">
+            <div class="back-circle">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                     stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="15 18 9 12 15 6"></polyline>
+                </svg>
+            </div>
         </div>
-      </div>
 
-      <div class="price-box">${post.price}</div>
+        <main class="content" id="postContainer"></main>
+    </div>
 
-      <div class="section-title">Date & Time</div>
-      <div>${post.date}</div>
+    <script>
+        lucide.createIcons();
 
-      <div class="section-title">Location</div>
-      <div>${post.location}</div>
-    `;
-  }
+        const menuBtn = document.getElementById('menuBtn');
+        const sideMenu = document.getElementById('sideMenu');
 
-  loadPost();
-</script>
+        if (menuBtn && sideMenu) {
+            menuBtn.addEventListener('click', () => {
+                sideMenu.classList.toggle('open');
+            });
+        }
+
+        // MOCK POST: load based on URL parameter ?id=1
+        const post = {
+            id: 1,
+            type: 'gig',
+            title: 'Looking for a drummer',
+            desc: 'We need an experienced drummer for a Friday night paid show. Must be comfortable with rock and pop.',
+            price: '$150-$250',
+            date: 'Feb 12, 2026 @ 8:00 PM',
+            location: 'Boston, MA',
+            profileName: 'Cool Band',
+        };
+
+        function loadPost() {
+            const c = document.getElementById('postContainer');
+
+            c.innerHTML = `
+            <div class="post-header">
+                <span class="badge ${post.type}">${post.type.toUpperCase()}</span>
+            </div>
+
+            <div class="title">${post.title}</div>
+            <div class="desc">${post.desc}</div>
+
+            <div class="profile" onclick="location.href='profile.html'">
+                <div class="pfp"></div>
+                <div>
+                <div style="font-weight:600;">${post.profileName}</div>
+                <div style="font-size:14px; color:var(--gray);">View Profile</div>
+                </div>
+            </div>
+
+            <div class="price-box">${post.price}</div>
+
+            <div class="section-title">Date & Time</div>
+            <div>${post.date}</div>
+
+            <div class="section-title">Location</div>
+            <div>${post.location}</div>
+            `;
+        }
+
+        loadPost();
+    </script>
 
 </body>
 </html>

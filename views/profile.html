@@ -12,6 +12,7 @@
     <style>
         :root {
             --red:#e63946;
+            --dred:#a22e38;
             --gray:#666;
             --black:#111;
             --light:#f4f4f4;
@@ -21,17 +22,139 @@
         body { background:white; }
 
         header {
-            height:60px; border-bottom:1px solid #eee;
-            display:flex; align-items:center; justify-content:space-between;
-            padding:0 24px;
+            position: sticky;
+            top: 0;
+            height: 60px;
+            background: white; /* prevents transparency when scrolling */
+            border-bottom: 1px solid #eee;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1500; /* stays above content but below menu button */
         }
-        header h1 { font-size:18px; font-weight:600; }
-        .icon-btn { cursor:pointer; color:var(--gray); }
-        .icon-btn:hover { color:var(--black); }
+
+        /* center the title */
+        header h1 {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            margin: 0;
+        }
+
+        /* MENU BUTTON — fixed so it can slide with menu */
+        #menuBtn {
+            position: fixed;
+            top: 14px;
+            left: 20px;
+            z-index: 3000;
+            transition: left 0.3s ease;
+        }
+
+        /* slide menu button with menu */
+        body.menu-open #menuBtn {
+            left: 244px;
+        }
+
+        /* PROFILE ICON — right side, absolutely positioned */
+        header .icon-btn:last-of-type {
+            position: absolute;
+            right: 24px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+
+        /* slide-out menu that overlays and doesn't push content */
+        .menu {
+            position: fixed;
+            top: 60px;
+            left: -220px;           /* start hidden off-screen */
+            width: 220px;
+            height: 100vh;
+            background: #fff;
+            border-right: 1px solid #eee;
+            padding: 24px;
+            transition: left 0.3s ease;
+            z-index: 1000;
+        }
+
+        /* when we add .open in JS, it slides in */
+        .menu.open {
+            left: 0;
+        }
+
+        /* Make menu button move with menu */
+        #menuBtn {
+            position: fixed;
+            top: 16px;
+            left: 20px;
+            z-index: 2000;
+            transition: left 0.3s ease;
+        }
+
+        /* When menu is open, shift the button to the right */
+        .menu.open ~ #menuBtn,
+        .menu.open + #menuBtn {
+            left: 244px; /* 220px menu + some margin */
+        }
+
+
+        .menu a {
+            display: block;
+            margin-bottom: 16px;
+            text-decoration: none;
+            color: var(--black);
+            font-weight: 500;
+        }
+
+        .menu a.active {
+        color: var(--red);
+        }
+
+        .icon-btn { 
+            cursor:pointer; 
+            color:var(--gray); 
+        }
+        .icon-btn:hover { 
+            color:var(--black); 
+        }
 
         .banner {
-            height:180px;
-            background:linear-gradient(135deg,#e63946,#ff8fa3);
+            position: relative;
+            height: 180px;
+            background: linear-gradient(135deg,#e63946,#ff8fa3);
+        }
+
+        /* back button inside banner */
+        .banner-back {
+            position: absolute;
+            top: 16px;
+            left: 16px;
+            z-index: 10;
+            cursor:pointer;
+        }
+
+        .back-circle {
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            background: rgba(0,0,0,0.25);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .back-circle svg {
+            width: 24px;
+            height: 24px;
+            stroke: white;
+        }
+
+        .back-circle:hover {
+            background: rgba(0,0,0,0.35);
         }
 
         .profile-container {
@@ -48,8 +171,16 @@
             border:4px solid white;
         }
 
-        .name { font-size:26px; font-weight:600; margin-top:12px; }
-        .bio { color:var(--gray); margin-top:6px; }
+        .name {
+            font-size:26px;
+            font-weight:600;
+            margin-top:12px;
+        
+        }
+        .bio {
+            color:var(--gray);
+            margin-top:6px;
+        }
 
         .section-title {
             font-size:18px; font-weight:600;
@@ -70,7 +201,7 @@
         .post-card h3 { font-size:16px; margin-bottom:6px; }
         .post-card p { color:var(--gray); font-size:14px; }
 
-        /* creat post button */
+        /* create post button */
         .add-btn {
             position:fixed;
             bottom:24px; right:24px;
@@ -141,7 +272,11 @@
         }
 
         /* tags */
-        .pill-container { display:flex; gap:8px; }
+        .pill-container {
+            display:flex;
+            gap: 8px; 
+        }
+    
         .pill {
             padding:6px 12px;
             border-radius:20px;
@@ -149,9 +284,18 @@
             cursor:pointer;
             user-select:none;
         }
+
+        .pill:hover { 
+            background: var(--gray); 
+        }
+
         .pill.active {
             background:var(--red);
             color:white;
+        }
+
+        .pill.active:hover { 
+            background: var(--dred); 
         }
 
         /* gallery */
@@ -170,180 +314,211 @@
 
 <body>
 
-<header>
-    <i data-lucide="arrow-left" class="icon-btn" onclick="history.back()"></i>
-    <h1>Musiconn</h1>
-    <i data-lucide="user" class="icon-btn"></i>
-</header>
+    <header>
+        <i data-lucide="menu" class="icon-btn" id="menuBtn"></i>
+        <h1 onclick="location.href='gigs.html'">Musiconn</h1>
+        <i data-lucide="user" class="icon-btn"></i>
+    </header>
 
-<div class="banner"></div>
+    <div class="container">
+        <nav class="menu" id="sideMenu">
+            <a href="#">Map</a>
+            <a href="gigs.html?view=gig">Gigs</a>
+            <a href="gigs.html?view=learn">Learn</a>
+            <a href="gigs.html?view=jam">Jam</a>
+        </nav>
 
-<div class="profile-container">
-    <div class="pfp" id="pfpDisplay"></div>
-    <input type="file" id="pfpUpload" accept="image/*" style="margin-top:12px;">
-    <div class="name">Cool Band</div>
-    <div class="bio">We play indie rock and love collaborating with new artists.</div>
+        <main class="feed" id="feed"></main>
+    </div>
 
-    <div class="profile-layout">
-        <!-- bands sidebar -->
-        <div class="bands-sidebar">
-            <div class="section-title">Your Bands</div>
-            <div id="bandList">
-                <div class="band-card">
-                    <div class="band-pfp"></div>
-                    <div>
-                        <div style="font-weight:600;">Indie Rock Band</div>
-                        <div style="font-size:14px; color:var(--gray);">5 members</div>
-                    </div>
-                </div>
-
-                <div class="band-card">
-                    <div class="band-pfp"></div>
-                    <div>
-                        <div style="font-weight:600;">Jazz Collective</div>
-                        <div style="font-size:14px; color:var(--gray);">3 members</div>
-                    </div>
-                </div>
+    <div class="banner">
+        <div class="banner-back" onclick="history.back()">
+            <div class="back-circle">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                     stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="15 18 9 12 15 6"></polyline>
+                </svg>
             </div>
-        </div>
-
-        <!-- main profile -->
-        <div style="flex:1;">
-            <div class="section-title">Tags</div>
-            <div class="pill-container" id="tagContainer">
-                <span class="pill">Guitar</span>
-                <span class="pill">Rock</span>
-                <span class="pill">Indie</span>
-            </div>
-
-            <div class="section-title">Posts</div>
-            <div class="carousel" id="postCarousel"></div>
-
-            <div class="section-title">Gallery</div>
-            <div id="gallery">
-                <div class="gallery-item">Photo</div>
-                <div class="gallery-item">Photo</div>
-                <div class="gallery-item">Video</div>
-            </div>
-
-            <input type="file" id="galleryUpload" accept="image/*,video/*" style="margin-top:12px;">
         </div>
     </div>
-</div>
 
-<!-- create post button -->
-<div class="add-btn" id="addPostBtn">
-    <i data-lucide="plus"></i>
-</div>
+    <div class="profile-container">
+        <div class="pfp" id="pfpDisplay"></div>
+        <input type="file" id="pfpUpload" accept="image/*" style="margin-top:12px;">
+        <div class="name">Cool Band</div>
+        <div class="bio">We play indie rock and love collaborating with new artists.</div>
 
-<!-- create post pop-up -->
-<div class="modal-bg" id="modalBg">
-    <div class="modal">
-        <h2>Create Post</h2>
+        <div class="profile-layout">
+            <!-- bands sidebar -->
+            <div class="bands-sidebar">
+                <div class="section-title">Your Bands</div>
+                <div id="bandList">
+                    <div class="band-card">
+                        <div class="band-pfp"></div>
+                        <div>
+                            <div style="font-weight:600;">Indie Rock Band</div>
+                            <div style="font-size:14px; color:var(--gray);">5 members</div>
+                        </div>
+                    </div>
 
-        <div class="field">
-            <label>Title</label>
-            <input type="text" id="postTitle">
+                    <div class="band-card">
+                        <div class="band-pfp"></div>
+                        <div>
+                            <div style="font-weight:600;">Jazz Collective</div>
+                            <div style="font-size:14px; color:var(--gray);">3 members</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- main profile -->
+            <div style="flex:1;">
+                <div class="section-title">Tags</div>
+                <div class="pill-container" id="tagContainer">
+                    <span class="pill">Guitar</span>
+                    <span class="pill">Rock</span>
+                    <span class="pill">Indie</span>
+                </div>
+
+                <div class="section-title">Posts</div>
+                <div class="carousel" id="postCarousel"></div>
+
+                <div class="section-title">Gallery</div>
+                <div id="gallery">
+                    <!-- upload photos to populate -->
+                </div>
+
+                <input type="file" id="galleryUpload" accept="image/*,video/*" style="margin-top:12px;">
+            </div>
         </div>
-
-        <div class="field">
-            <label>Type</label>
-            <select id="postType">
-                <option value="gig">Gig</option>
-                <option value="learn">Learn</option>
-                <option value="jam">Jam</option>
-            </select>
-        </div>
-
-        <div class="field">
-            <label>Date & Time</label>
-            <input type="text" id="postDate" placeholder="Feb 12, 2026 @ 8pm">
-        </div>
-
-        <div class="field">
-            <label>Location</label>
-            <input type="text" id="postLocation">
-        </div>
-
-        <div class="field">
-            <label>Price</label>
-            <input type="text" id="postPrice">
-        </div>
-
-        <div class="field">
-            <label>Description</label>
-            <textarea id="postDesc"></textarea>
-        </div>
-
-        <button class="save-btn" id="savePostBtn">Save Post</button>
     </div>
-</div>
 
-<script>
-    lucide.createIcons();
+    <!-- create post button -->
+    <div class="add-btn" id="addPostBtn">
+        <i data-lucide="plus"></i>
+    </div>
 
-    // MOCK POSTS
-    const posts=[
-        {title:'Looking for drummer', desc:'Friday gig', type:'gig'},
-        {title:'Jazz pianist wanted', desc:'Weekly residency', type:'gig'},
-        {title:'Guitar lessons', desc:'Beginner friendly', type:'learn'}
-    ];
+    <!-- create post pop-up -->
+    <div class="modal-bg" id="modalBg">
+        <div class="modal">
+            <h2>Create Post</h2>
 
-    function loadCarousel(){
-        const c=document.getElementById('postCarousel');
-        c.innerHTML='';
-        posts.forEach(p=>{
-            const card=document.createElement('div');
-            card.className='post-card';
-            card.onclick=()=>location.href='post.html';
-            card.innerHTML=`<h3>${p.title}</h3><p>${p.desc}</p>`;
-            c.appendChild(card);
-        });
-    }
-    loadCarousel();
+            <div class="field">
+                <label>Title</label>
+                <input type="text" id="postTitle">
+            </div>
 
-    const modalBg=document.getElementById('modalBg');
-    document.getElementById('addPostBtn').onclick=()=>{ modalBg.style.display='flex'; };
-    modalBg.onclick=e=>{ if(e.target===modalBg) modalBg.style.display='none'; };
+            <div class="field">
+                <label>Type</label>
+                <select id="postType">
+                    <option value="gig">Gig</option>
+                    <option value="learn">Learn</option>
+                    <option value="jam">Jam</option>
+                </select>
+            </div>
 
-    document.getElementById('savePostBtn').onclick=()=>{
-        const t=document.getElementById('postTitle').value;
-        const d=document.getElementById('postDesc').value;
-        const type=document.getElementById('postType').value;
+            <div class="field">
+                <label>Date & Time</label>
+                <input type="text" id="postDate" placeholder="Feb 12, 2026 @ 8pm">
+            </div>
 
-        posts.push({title:t, desc:d, type:type});
+            <div class="field">
+                <label>Location</label>
+                <input type="text" id="postLocation">
+            </div>
+
+            <div class="field">
+                <label>Price</label>
+                <input type="text" id="postPrice">
+            </div>
+
+            <div class="field">
+                <label>Description</label>
+                <textarea id="postDesc"></textarea>
+            </div>
+
+            <button class="save-btn" id="savePostBtn">Save Post</button>
+        </div>
+    </div>
+
+    <script>
+        // icons + menu wiring
+        if (window.lucide) {
+            lucide.createIcons();
+        }
+
+        const menuBtn = document.getElementById('menuBtn');
+        const sideMenu = document.getElementById('sideMenu');
+
+        if (menuBtn && sideMenu) {
+            menuBtn.addEventListener('click', () => {
+                sideMenu.classList.toggle('open');
+            });
+        }
+
+
+        // MOCK POSTS
+        const posts=[
+            {title:'Looking for drummer', desc:'Friday gig', type:'gig'},
+            {title:'Jazz pianist wanted', desc:'Weekly residency', type:'gig'},
+            {title:'Guitar lessons', desc:'Beginner friendly', type:'learn'}
+        ];
+
+        function loadCarousel(){
+            const c=document.getElementById('postCarousel');
+            c.innerHTML='';
+            posts.forEach(p=>{
+                const card=document.createElement('div');
+                card.className='post-card';
+                card.onclick=()=>location.href='post.html'; // change to go to actual post page
+                card.innerHTML=`<h3>${p.title}</h3><p>${p.desc}</p>`;
+                c.appendChild(card);
+            });
+        }
+
         loadCarousel();
-        modalBg.style.display='none';
-    };
 
-    // tag select
-    document.querySelectorAll('#tagContainer .pill').forEach(p=>{
-        p.onclick=()=>p.classList.toggle('active');
-    });
+        const modalBg=document.getElementById('modalBg');
+        document.getElementById('addPostBtn').onclick=()=>{ modalBg.style.display='flex'; };
+        modalBg.onclick=e=>{ if(e.target===modalBg) modalBg.style.display='none'; };
 
-    // pfp upload WIP
-    const pfpUpload=document.getElementById('pfpUpload');
-    const pfpDisplay=document.getElementById('pfpDisplay');
-    if(pfpUpload) pfpUpload.onchange=e=>{
-        const file=e.target.files[0];
-        if(file){
-            pfpDisplay.style.background=`url(${URL.createObjectURL(file)}) center/cover`;
-        }
-    };
+        document.getElementById('savePostBtn').onclick=()=>{
+            const t=document.getElementById('postTitle').value;
+            const d=document.getElementById('postDesc').value;
+            const type=document.getElementById('postType').value;
 
-    // gallery upload WIP
-    const galleryUpload=document.getElementById('galleryUpload');
-    const gallery=document.getElementById('gallery');
-    if(galleryUpload) galleryUpload.onchange=e=>{
-        const file=e.target.files[0];
-        if(file){
-            const div=document.createElement('div');
-            div.className='gallery-item';
-            div.style.background=`url(${URL.createObjectURL(file)}) center/cover`;
-            gallery.appendChild(div);
-        }
-    };
-</script>
+            posts.push({title:t, desc:d, type:type});
+            loadCarousel();
+            modalBg.style.display='none';
+        };
 
+        // tag select
+        document.querySelectorAll('#tagContainer .pill').forEach(p=>{
+            p.onclick=()=>p.classList.toggle('active');
+        });
+
+        // pfp upload WIP
+        const pfpUpload=document.getElementById('pfpUpload');
+        const pfpDisplay=document.getElementById('pfpDisplay');
+        if(pfpUpload) pfpUpload.onchange=e=>{
+            const file=e.target.files[0];
+            if(file){
+                pfpDisplay.style.background=`url(${URL.createObjectURL(file)}) center/cover`;
+            }
+        };
+
+        // gallery upload WIP
+        const galleryUpload=document.getElementById('galleryUpload');
+        const gallery=document.getElementById('gallery');
+        if(galleryUpload) galleryUpload.onchange=e=>{
+            const file=e.target.files[0];
+            if(file){
+                const div=document.createElement('div');
+                div.className='gallery-item';
+                div.style.background=`url(${URL.createObjectURL(file)}) center/cover`;
+                gallery.appendChild(div);
+            }
+        };
+    </script>
 </body>
 </html>
