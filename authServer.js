@@ -174,13 +174,26 @@ http.createServer((req, res) => {
             const parsedData = qs.parse(myFormData);
             const refreshToken = parsedData.token;
 
-            // TO DO: Should Ilog out? 
-            if(refreshToken == null) return jsonResponse(res, 401, { error: 'Unauthorized: invalid refresh token' });
+            // TO DO: Should Ilog out?
+            if(refreshToken == null) return jsonResponse(res, 401, { error: 'Unauthorized: Invalid refresh token' });
+            manageUsersCollection(res, (res, collection, client) => {
+                collection.findOne({ refreshToken: refreshToken }, (err, dbUser) => {
+                    if (err) {
+                        console.log(`Error querying: ${err}`);
+                        jsonResponse(res, 500, { error: 'Database Error' });
+                        client.close();
+                        return;
+                    }
 
-            
-
-
-        })
+                    if (!dbUser) {
+                        console.log('Refresh token not found in DB');
+                        jsonResponse(res, 401, { error: 'Unauthorized: Invalid Refresh Token' });
+                        client.close();
+                        return;
+                    }
+                });
+            });
+        });
 
     }
 
