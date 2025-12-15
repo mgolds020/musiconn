@@ -2,3 +2,5 @@
 node_modules
 notes
 requests.rest
+# Snyk Security Extension - AI Rules (auto-generated)
+.github/instructions/snyk_rules.instructions.md
