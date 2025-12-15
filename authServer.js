@@ -122,40 +122,64 @@ http.createServer((req, res) => {
 
                     const passwordMatch = bcrypt.compareSync(passwordEntered, dbUser.password);
 
-                    if(passwordMatch) {
-                        console.log('Login Successful');
+                    // check if user password = the stored password
+                    if(!passwordMatch) {
+                        console.log('Incorrect password');
+                        jsonResponse(res, 401, { error: 'Incorrect Password'});
+                        client.close();
+                        return;
+                    }
 
-                        // create an object with the fields we want to sign with our secret key
-                        const tokenPayload = {
-                            sub: dbUser._id.toString(),
-                            username: dbUser.username,
-                        }
+                    // if we make it here, user credentials are valid
 
-                        // create token and send it in the response
-                        const accessToken = generateAccessToken(tokenPayload);
-                        const refreshToken = jwt.sign(tokenPayload, process.env.REFRESH_TOKEN_SECRET);
+                    // create an object with the fields we want to sign with our secret key
+                    const tokenPayload = {
+                        sub: dbUser._id.toString(),
+                        username: dbUser.username,
+                    }
+
+                    // create tokens
+                    const accessToken = generateAccessToken(tokenPayload);
+                    const refreshToken = jwt.sign(tokenPayload, process.env.REFRESH_TOKEN_SECRET);
+                    
+                    // store the refresh token with this user in the database
+                    collection.updateOne({ _id: dbUser._id }, { $set: { refreshToken: refreshToken} }, (err) => {
+                        if (err) {
+                            console.log("ERROR: cannot save refresh token"); 
+                            // TO DO: should log the user out?
+                            jsonResponse(res, 500, { error: 'Error saving refresh token'}); 
+                            client.close();
+                            return;
+                        } 
+
+                        // send encrypted tokens to the front end
                         jsonResponse(res, 200, {
                             message: 'Login Success',
                             accessToken: accessToken,
                             refreshToken: refreshToken
-                         });
+                        });
 
-                    } else {
-                        console.log('Incorrect password');
-                        jsonResponse(res, 401, { error: 'Incorrect Password'});
-                    }
+                        client.close();
 
-                    client.close();
-    
+                    });
+
                 });
             });
         });
 
     } else if (path === "/token" && req.method == 'POST') {
+        let myFormData = '';
         req.on('data', newData => { myFormData += newData.toString(); });
         req.on('end', () => {
             const parsedData = qs.parse(myFormData);
             const refreshToken = parsedData.token;
+
+            // TO DO: Should Ilog out? 
+            if(refreshToken == null) return jsonResponse(res, 401, { error: 'Unauthorized: invalid refresh token' });
+
+            
+
+
         })
 
     }
