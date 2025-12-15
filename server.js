@@ -36,7 +36,7 @@ http.createServer((req, res) => {
             const parsedData = qs.parse(myFormData);
             const postId = parsedData.postId;
             authenticateToken(req, res, (tokenInfo) => {
-                managaPostsCollection(res, (res, collection, client) => {
+                managePostsCollection(res, (res, collection, client) => {
                     collection.findOne( { _id: postId }, (err, post) => {
 
                         if(err) {
