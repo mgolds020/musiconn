@@ -70,8 +70,9 @@ http.createServer((req, res) => {
                         } else {
                             // redirect user to log in page
                             console.log("User successfully created, redirecting to login page");
-                            res.writeHead(303, {Location: '/login'});
-                            res.end('');
+                            jsonResponse(res, 201, { message: "User created" });
+                            client.close();
+                            return;
                         }
 
                         client.close();
