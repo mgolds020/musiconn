@@ -22,6 +22,8 @@ http.createServer((req, res) => {
         loadFile('views/homepage.html', res);
     } else if (path === 'profile' && req.method === 'GET' ) {
         loadFile('views/profile.html', res);
+    } else if (path === '/map' && req.method === 'GET' ) {
+        loadFile('views/map.html', res);
     } else {
         res.writeHead(303, {Location: '/'});
         res.end('');
