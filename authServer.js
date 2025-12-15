@@ -82,7 +82,7 @@ http.createServer((req, res) => {
 
                     if (user) {
                         console.log("Username Already Exists");
-                        jsonResponse(res, 403, { error: 'Forbidden' });
+                        jsonResponse(res, 409, { error: 'Username already exists' });
                         client.close();
                         return;
                     }

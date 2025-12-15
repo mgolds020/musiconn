@@ -155,6 +155,7 @@
         </div>
 
         <button class="login-btn" type="submit">Sign up</button>
+        <div id="errorMsg" style="margin-top:12px; color:#e63946; font-size:14px;"></div>
       </form>
 
       <div class="signup">
@@ -193,8 +194,11 @@
           credentials: "include"
         });
 
-        if (!res.ok && res.status !== 303) return;
-
+        const data = await res.json();
+        if (!res.ok) {
+            document.getElementById("errorMsg").textContent = data.error || "Signup failed";
+            return;
+        }
         // after successful signup, send user to login page
         window.location.href = "/login";
       } catch (err) {
