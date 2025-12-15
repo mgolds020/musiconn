@@ -263,13 +263,22 @@
 
         const center = map.getCenter();
 
+        // radius based on current map view, clamped to max
+        const radiusMiles = Math.min(
+          currentRadiusMiles(),
+          MAX_RADIUS_MILES
+        );
+
         try {
           const res = await fetch("/map", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              location: { type: "Point", coordinates: [center.lng, center.lat] },
-              distanceMiles: 40
+              location: {
+                type: "Point",
+                coordinates: [center.lng, center.lat] // [lon, lat]
+              },
+              distanceMiles: radiusMiles
             })
           });
 
@@ -279,7 +288,6 @@
             return;
           }
 
-          // Expecting an array of posts
           renderPosts(Array.isArray(data) ? data : []);
         } catch (err) {
           console.error(err);
