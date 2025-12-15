@@ -15,8 +15,33 @@ const PORT = 8080;
 
 const MongoClient = mongo.MongoClient;
 
+// allow CORS requests from the client server
+function handleCORS(req, res) {
+  res.setHeader("Access-Control-Allow-Origin", "http://localhost:3000");
+  res.setHeader("Access-Control-Allow-Credentials", "true");
+  res.setHeader(
+    "Access-Control-Allow-Headers",
+    "Content-Type, Authorization"
+  );
+  res.setHeader(
+    "Access-Control-Allow-Methods",
+    "GET, POST, OPTIONS"
+  );
+
+  // Preflight request
+  if (req.method === "OPTIONS") {
+    res.writeHead(204);
+    res.end();
+    return true;
+  }
+  return false;
+}
+
 http.createServer((req, res) => {
     // res.writeHead(200, {'Content-Type': 'text/html'});
+
+    if (handleCORS(req, res)) return;
+
     const path = urlObj.parse(req.url).pathname;
 
     if (path === '/signup' && req.method === 'GET') {
@@ -141,7 +166,7 @@ http.createServer((req, res) => {
 
                     // create tokens
                     const accessToken = generateAccessToken(tokenPayload);
-                    const refreshToken = jwt.sign(tokenPayload, process.env.REFRESH_TOKEN_SECRET);
+                    const refreshToken = jwt.sign(tokenPayload, process.env.REFRESH_TOKEN_SECRET, { expiresIn: "7d" });
                     
                     // store the refresh token with this user in the database
                     collection.updateOne({ _id: dbUser._id }, { $set: { refreshToken: refreshToken} }, (err) => {
@@ -154,14 +179,20 @@ http.createServer((req, res) => {
                         } 
 
                         // send encrypted tokens to the front end
-                        jsonResponse(res, 200, {
-                            message: 'Login Success',
-                            accessToken: accessToken,
-                            refreshToken: refreshToken
+                        setRefreshCookie(res, refreshToken);
+
+                        res.writeHead(200, {
+                            "Content-Type": "application/json",
+                            "Access-Control-Allow-Origin": "http://localhost:3000",
+                            "Access-Control-Allow-Credentials": "true",
                         });
+                        res.end(JSON.stringify({
+                            message: "Login Success",
+                            accessToken: accessToken
+                        }));
 
                         client.close();
-
+                        return;
                     });
 
                 });
@@ -169,33 +200,51 @@ http.createServer((req, res) => {
         });
 
     } else if (path === "/token" && req.method == 'POST') {
-        let myFormData = '';
-        req.on('data', newData => { myFormData += newData.toString(); });
-        req.on('end', () => {
-            const parsedData = qs.parse(myFormData);
-            const refreshToken = parsedData.token;
 
-            // TO DO: Should Ilog out?
-            if(refreshToken == null) return jsonResponse(res, 401, { error: 'Unauthorized: Invalid refresh token' });
-            manageUsersCollection(res, (res, collection, client) => {
-                collection.findOne({ refreshToken: refreshToken }, (err, dbUser) => {
-                    if (err) {
-                        console.log(`Error querying: ${err}`);
-                        jsonResponse(res, 500, { error: 'Database Error' });
-                        client.close();
-                        return;
-                    }
+        // read refresh token from cookie (preferred)
+        const cookies = parseCookies(req);
+        const refreshToken = cookies.refreshToken;
 
-                    if (!dbUser) {
-                        console.log('Refresh token not found in DB');
-                        jsonResponse(res, 401, { error: 'Unauthorized: Invalid Refresh Token' });
-                        client.close();
-                        return;
-                    }
+        if (!refreshToken) {
+            return jsonResponse(res, 401, { error: "Unauthorized: missing refresh token" });
+            // TO DO: Should I log out? 
+        }
+
+        let payload;
+        try {
+            payload = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET);
+        } catch (e) {
+            return jsonResponse(res, 403, { error: "Forbidden: invalid refresh token" });
+        }
+
+        manageUsersCollection(res, (res, collection, client) => {
+                // confirm token matches what we stored for this user
+            collection.findOne({ _id: new mongo.ObjectId(payload.sub)}, (err, dbUser) => {
+                if (err || !dbUser) {
+                    client.close();
+                    return jsonResponse(res, 401, { error: "Unauthorized" });
+                }
+
+                if (dbUser.refreshToken !== refreshToken) {
+                    client.close();
+                    return jsonResponse(res, 403, { error: "Forbidden: token mismatch" });
+                }
+
+                // issue a new access token
+                const newAccessToken = generateAccessToken({
+                    sub: dbUser._id.toString(),
+                    username: dbUser.username
                 });
+
+                client.close();
+                return jsonResponse(res, 200, { accessToken: newAccessToken });
             });
         });
+       
 
+    }
+    else {
+        jsonResponse(res, 404, { error: "Not Found" });
     }
 
 }).listen(PORT);
@@ -236,11 +285,45 @@ function manageUsersCollection(res, callback) {
  * Helper function for sending json replacing express's res.json (with less input flexibility)
  */
 function jsonResponse(res, status, data) {
-    res.writeHead(status, { 'Content-type': 'application/json' });
-
-    res.end(JSON.stringify(data ?? {}));
+  res.writeHead(status, {
+    "Content-Type": "application/json",
+    "Access-Control-Allow-Origin": "http://localhost:3000",
+    "Access-Control-Allow-Credentials": "true",
+  });
+  res.end(JSON.stringify(data ?? {}));
 }
 
 function generateAccessToken(payload) {
     return jwt.sign(payload, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '15m'});
+}
+
+function parseCookies(req) {
+  const header = req.headers.cookie;
+  if (!header) return {};
+  const out = {};
+  header.split(";").forEach(part => {
+    const [k, ...v] = part.trim().split("=");
+    out[k] = decodeURIComponent(v.join("="));
+  });
+  return out;
+}
+
+function setRefreshCookie(res, refreshToken) {
+  // For local dev over http, omit Secure. In production over https, add Secure.
+  const cookie = [
+    `refreshToken=${encodeURIComponent(refreshToken)}`,
+    "HttpOnly",
+    "SameSite=Lax",
+    "Path=/",
+    // "Secure", // enable when serving over https
+    // "Max-Age=604800" // optional: 7 days
+  ].join("; ");
+  res.setHeader("Set-Cookie", cookie);
+}
+
+function clearRefreshCookie(res) {
+  res.setHeader(
+    "Set-Cookie",
+    "refreshToken=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0"
+  );
 }
