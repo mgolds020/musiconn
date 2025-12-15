@@ -1,168 +1,264 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Gigs • Musiconn</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Gigs • Musiconn</title>
 
-  <!-- google fons and icon library -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <!-- google fons and icon library -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
 
-  <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
 
-  <style>
-    :root {
-      --red: #e63946;
-      --black: #111;
-      --gray: #666;
-      --light-gray: #f4f4f4;
-    }
+    <style>
+        :root {
+            --red: #e63946;
+            --black: #111;
+            --gray: #666;
+            --light-gray: #f4f4f4;
+            --white: #fff;
+        }
 
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      font-family: 'Inter', sans-serif;
-    }
+        * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+        font-family: 'Inter', sans-serif;
+        }
 
-    body {
-      background: #fff;
-    }
+        body {
+        background: #fff;
+        }
 
-    .subheader {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 16px 40px;
-      border-bottom: 1px solid #eee;
-    }
+        /* top bar */
+        header {
+        height: 60px;
+        border-bottom: 1px solid #eee;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 24px;
+        }
 
-    .subheader h2 {
-      font-size: 20px;
-      font-weight: 600;
-    }
+        .left, .right {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        }
 
-    /* Top Bar */
-    header {
-      height: 60px;
-      border-bottom: 1px solid #eee;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0 24px;
-    }
+        header {
+            position: sticky;
+            top: 0;
+            height: 60px;
+            background: #fff; /* prevents transparency when scrolling */
+            border-bottom: 1px solid #eee;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1500; /* stays above content but below menu button */
+        }
 
-    .left, .right {
-      display: flex;
-      align-items: center;
-      gap: 16px;
-    }
+        /* center the title */
+        header h1 {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            margin: 0;
+        }
 
-    header h1 {
-      font-size: 18px;
-      font-weight: 600;
-    }
+        .subheader {
+            position: sticky;
+            top: 60px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            padding: 0 40px;
+            background: #fff;
+            border-bottom: 1px solid #eee;
+        }
 
-    .icon-btn {
-      cursor: pointer;
-      color: var(--gray);
-      transition: color 0.15s ease;
-    }
+        /* center the subheader title */
+        .subheader h2 {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 20px;
+            font-weight: 600;
+            margin: 0;
+        }
 
-    .icon-btn:hover {
-      color: var(--black);
-    }
+        /* keep the slider icon on the right */
+        .subheader .icon-btn {
+            position: absolute;
+            right: 40px;
+        }
 
-    /* Layout */
-    .container {
-      display: flex;
-    }
 
-    /* Slide Menu */
-    .menu {
-      width: 220px;
-      border-right: 1px solid #eee;
-      padding: 24px;
-      display: none;
-    }
+        /* MENU BUTTON — fixed so it can slide with menu */
+        #menuBtn {
+            position: fixed;
+            top: 14px;
+            left: 20px;
+            z-index: 3000;
+            transition: left 0.3s ease;
+        }
 
-    .menu a {
-      display: block;
-      margin-bottom: 16px;
-      text-decoration: none;
-      color: var(--black);
-      font-weight: 500;
-    }
+        /* slide menu button with menu */
+        body.menu-open #menuBtn {
+            left: 244px;
+        }
 
-    .menu a.active {
-      color: var(--red);
-    }
+        /* PROFILE ICON — right side, absolutely positioned */
+        header .icon-btn:last-of-type {
+            position: absolute;
+            right: 24px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
 
-    /* Feed */
-    .feed {
-      flex: 1;
-      padding: 24px 40px;
-    }
 
-    .post {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      border-bottom: 1px solid #eee;
-      padding: 20px 0;
-      cursor: pointer;
-    }
+        /* slide-out menu that overlays and doesn't push content */
+        .menu {
+            position: fixed;
+            top: 60px;
+            left: -220px;           /* start hidden off-screen */
+            width: 220px;
+            height: 100vh;
+            background: #fff;
+            border-right: 1px solid #eee;
+            padding: 24px;
+            transition: left 0.3s ease;
+            z-index: 1000;
+        }
 
-    .post-left {
-      max-width: 70%;
-    }
+        /* when we add .open in JS, it slides in */
+        .menu.open {
+            left: 0;
+        }
 
-    .price-box {
-      border: 1px solid #ddd;
-      padding: 8px 12px;
-      border-radius: 8px;
-      font-size: 14px;
-      font-weight: 500;
-      background: var(--light-gray);
-    }
+        /* Make menu button move with menu */
+        #menuBtn {
+            position: fixed;
+            top: 16px;
+            left: 20px;
+            z-index: 2000;
+            transition: left 0.3s ease;
+        }
 
-    .post h2 {
-      font-size: 16px;
-      margin-bottom: 6px;
-    }
+        /* When menu is open, shift the button to the right */
+        .menu.open ~ #menuBtn,
+        .menu.open + #menuBtn {
+            left: 244px; /* 220px menu + some margin */
+        }
 
-    .post p {
-      font-size: 14px;
-      color: var(--gray);
-    }
+        .menu a {
+            display: block;
+            margin-bottom: 16px;
+            text-decoration: none;
+            color: var(--black);
+            font-weight: 500;
+        }
 
-    .badge {
-      display: inline-block;
-      font-size: 12px;
-      padding: 4px 8px;
-      border-radius: 6px;
-      margin-bottom: 8px;
-    }
+        .menu a.active {
+        color: var(--red);
+        }
 
-    .gig { background: rgba(230,57,70,0.1); color: var(--red); }
-    .learn { background: #f1f1f1; color: var(--black); }
-    .jam { background: #111; color: white; }
+        .icon-btn { 
+            cursor:pointer; 
+            color:var(--gray); 
+        }
+        .icon-btn:hover { 
+            color:var(--black); 
+        }
 
-  </style>
+        /* feed */
+        .feed {
+        flex: 1;
+        padding: 24px 40px;
+        }
+
+        .post {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid #eee;
+        padding: 20px 0;
+        cursor: pointer;
+        }
+
+        .post-left {
+        max-width: 70%;
+        }
+
+        .price-box {
+        border: 1px solid #ddd;
+        padding: 8px 12px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 500;
+        background: var(--light-gray);
+        }
+
+        .post h2 {
+        font-size: 16px;
+        margin-bottom: 6px;
+        }
+
+        .post p {
+        font-size: 14px;
+        color: var(--gray);
+        }
+
+        .badge {
+        display: inline-block;
+        font-size: 12px;
+        padding: 4px 8px;
+        border-radius: 6px;
+        margin-bottom: 8px;
+        }
+
+        .gig {
+            background: rgba(230,57,70,0.1);
+            color: var(--red); 
+        }
+        .learn {
+            background: #f1f1f1;
+            color: var(--black); 
+        }
+        .jam {
+            background: #111;
+            color: var(--white);
+        }
+
+    </style>
 </head>
 <body>
 
-  <header>
-    <div class="left">
-      <i data-lucide="menu" class="icon-btn" id="menuBtn"></i>
+    <header>
+        <i data-lucide="menu" class="icon-btn" id="menuBtn"></i>
+        <h1 onclick="location.href='gigs.html'" onclick="location.href='gigs.html?view=gig'">Musiconn</h1>
+        <i data-lucide="user" class="icon-btn" onclick="location.href='profile.html'"></i>
+    </header>
+
+    <div class="subheader">
+        <h2 id="pageTitle">Gigs</h2>
+        <i data-lucide="sliders" class="icon-btn"></i>
     </div>
 
-    <h1>Musiconn</h1>
+    <div class="container">
+        <nav class="menu" id="sideMenu">
+            <a href="#" id="mapLink">Map</a>
+            <a href="gigs.html?view=gig">Gigs</a>
+            <a href="gigs.html?view=learn">Learn</a>
+            <a href="gigs.html?view=jam">Jam</a>
+        </nav>
 
-    <div class="right">
-      <i data-lucide="user" class="icon-btn" onclick="location.href='profile.html'"></i>
+        <main class="feed" id="feed"></main>
     </div>
   </header>
 
