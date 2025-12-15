@@ -1,0 +1,225 @@
+:root {
+  --red: #e63946;
+  --black: #111;
+  --gray: #666;
+  --light-gray: #f4f4f4;
+  --menu-width: 220px;
+}
+
+/* Smooth movement */
+.leaflet-control-container {
+  transition: transform 0.2s ease;
+}
+
+/* When menu is open, push controls right */
+body.menu-open .leaflet-top {
+  transform: translateX(var(--menu-width));
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
+body { background: #fff; overflow: hidden; }
+
+/* Header */
+header {
+  height: 60px;
+  border-bottom: 1px solid #eee;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+}
+header h1 { font-size: 18px; font-weight: 600; }
+.left, .right { display: flex; align-items: center; gap: 16px; }
+.icon-btn { cursor: pointer; color: var(--gray); transition: color 0.15s ease; }
+.icon-btn:hover { color: var(--black); }
+
+.container {
+  position: relative;           /* IMPORTANT: anchors the absolute menu */
+  display: flex;
+  height: calc(100vh - 60px);
+  width: 100vw;
+}
+
+
+/* Nav menu (left) - overlay so it doesn't resize the map */
+/* Nav menu (left) — overlay, styled like gigs page */
+.menu {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: var(--menu-width);
+  height: 100%;
+  padding: 24px 20px;
+  background: white;
+  border-right: 1px solid #eee;
+  z-index: 2000;
+
+  /* overlay behavior */
+  transform: translateX(-100%);
+  transition: transform 0.2s ease;
+
+  /* visual polish */
+  box-shadow: 4px 0 16px rgba(0,0,0,0.04);
+}
+
+/* visible state */
+body.menu-open .menu {
+  transform: translateX(0);
+}
+
+/* menu links */
+.menu a {
+  display: block;
+  padding: 10px 8px;
+  margin-bottom: 6px;
+  text-decoration: none;
+  color: var(--black);
+  font-weight: 500;
+  font-size: 15px;
+  border-radius: 8px;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.menu a:hover {
+  background: var(--light-gray);
+}
+
+.menu a.active {
+  color: var(--red);
+  background: rgba(230, 57, 70, 0.08);
+}
+
+
+
+/* Map area (middle) */
+.map-wrap {
+  position: relative;
+  flex: 1;
+  height: 100%;
+}
+#map {
+  width: 100%;
+  height: calc(100vh - 60px); /* if you have a fixed header */
+}
+
+/* Results sidebar (right) */
+#sidebar {
+  width: 280px;
+  height: 100%;
+  overflow-y: auto;
+  background: white;
+  border-left: 1px solid #e5e5e5;
+}
+
+.sidebar-item {
+  display: block;
+  width: 100%;
+  padding: 12px;
+  text-align: left;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  border-bottom: 1px solid #f0f0f0;
+}
+.sidebar-item:hover { background: #f7f7f7; }
+.sidebar-title { font-weight: 600; }
+.sidebar-meta { font-size: 12px; margin-top: 4px; color: var(--gray); }
+
+/* Search button overlay (bottom-center) */
+#map-search-overlay {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  transform: translateX(-50%);
+  z-index: 3000;
+  pointer-events: none;
+}
+
+#map-search-btn {
+  pointer-events: auto;
+  padding: 12px 18px;
+  border-radius: 999px;
+  border: 1px solid #ccc;
+  background: #f4f4f4;
+  font-size: 14px;
+  cursor: not-allowed;
+}
+
+#map-search-btn.enabled {
+  background: white;
+  cursor: pointer;
+}
+
+
+/* Locate button */
+#locate-btn {
+  position: absolute;
+  right: 20px;
+  bottom: 24px;
+  z-index: 1100;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  border: 1px solid #ccc;
+  background: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+#locate-btn:hover { background: #f7f7f7; }
+
+/* Results sidebar (right, hidden until search) */
+.results {
+  width: 280px;
+  height: 100%;
+  overflow: hidden;
+  background: white;
+  border-left: 1px solid #e5e5e5;
+  display: flex;
+  flex-direction: column;
+}
+
+.results.hidden {
+  display: none;
+}
+
+.results-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 12px;
+  border-bottom: 1px solid #eee;
+}
+
+.results-title {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.close-btn {
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  color: var(--gray);
+  font-size: 16px;
+  line-height: 1;
+  padding: 6px 8px;
+  border-radius: 8px;
+}
+
+.close-btn:hover {
+  color: var(--black);
+  background: #f7f7f7;
+}
+
+.results-body {
+  overflow-y: auto;
+  height: 100%;
+}
+
+.empty-state {
+  padding: 16px;
+  color: var(--gray);
+  font-size: 14px;
+}

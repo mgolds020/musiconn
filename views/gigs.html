@@ -260,74 +260,84 @@
 
         <main class="feed" id="feed"></main>
     </div>
+  </header>
 
-    <script>
-        lucide.createIcons();
+  <div class="subheader">
+    <h2 id="pageTitle">Gigs</h2>
+    <i data-lucide="sliders" class="icon-btn"></i>
+  </div>
 
-        const menuBtn = document.getElementById('menuBtn');
-        const sideMenu = document.getElementById('sideMenu');
+  <div class="container">
+    <nav class="menu" id="sideMenu">
+      <a href="/map.html">Map</a>
+      <a href="#" class="active" onclick="setView('gig')">Gigs</a>
+      <a href="#" onclick="setView('learn')">Learn</a>
+      <a href="#" onclick="setView('jam')">Jam</a>
+    </nav>
 
-        if (menuBtn && sideMenu) {
-            menuBtn.addEventListener('click', () => {
-                sideMenu.classList.toggle('open');
-            });
-        }
+    <main class="feed" id="feed"></main>
+  </div>
 
-        const feed = document.getElementById('feed');
-        const pageTitle = document.getElementById('pageTitle');
+  <script>
+    lucide.createIcons();
 
-        const posts = [
-            { id: 1, type: 'gig', title: 'Looking for a drummer', desc: 'Paid gig this Friday', price: '$150–$250' },
-            { id: 2, type: 'gig', title: 'Jazz trio needed', desc: 'Restaurant residency', price: '$300–$400' },
-            { id: 3, type: 'gig', title: 'Wedding guitarist', desc: 'Ceremony + cocktail hour', price: '$500–$700' },
-            { id: 4, type: 'gig', title: 'Looking for a drummer', desc: 'Paid gig this Friday', price: '$150–$250' },
-            { id: 5, type: 'gig', title: 'Jazz trio needed', desc: 'Restaurant residency', price: '$300–$400' },
-            { id: 6, type: 'gig', title: 'Wedding guitarist', desc: 'Ceremony + cocktail hour', price: '$500–$700' },
-            { id: 7, type: 'gig', title: 'Looking for a drummer', desc: 'Paid gig this Friday', price: '$150–$250' },
-            { id: 8, type: 'gig', title: 'Jazz trio needed', desc: 'Restaurant residency', price: '$300–$400' },
-            { id: 9, type: 'gig', title: 'Wedding guitarist', desc: 'Ceremony + cocktail hour', price: '$500–$700' },
-            { id: 10, type: 'learn', title: 'Guitar lessons available', desc: 'Beginner friendly', price: '$40/hr' },
-            { id: 11, type: 'jam', title: 'Jam session tonight', desc: 'All instruments welcome', price: 'Free' }
-        ];
+    const menuBtn = document.getElementById('menuBtn');
+    const sideMenu = document.getElementById('sideMenu');
+    const feed = document.getElementById('feed');
+    const pageTitle = document.getElementById('pageTitle');
 
-        let currentView = 'gig';
+    const posts = [
+      { id: 1, type: 'gig', title: 'Looking for a drummer', desc: 'Paid gig this Friday', price: '$150–$250' },
+      { id: 2, type: 'gig', title: 'Jazz trio needed', desc: 'Restaurant residency', price: '$300–$400' },
+      { id: 3, type: 'gig', title: 'Wedding guitarist', desc: 'Ceremony + cocktail hour', price: '$500–$700' },
+      { id: 4, type: 'learn', title: 'Guitar lessons available', desc: 'Beginner friendly', price: '$40/hr' },
+      { id: 5, type: 'jam', title: 'Jam session tonight', desc: 'All instruments welcome', price: 'Free' }
+    ];
 
-        function renderFeed() {
-            feed.innerHTML = '';
-            posts.filter(p => p.type === currentView).forEach(p => {
-                const div = document.createElement('div');
-                div.className = 'post';
-                div.onclick = () => location.href = 'post.html';
-                div.innerHTML = `
-                    <div class="post-left">
-                        <span class="badge ${p.type}">${p.type.toUpperCase()}</span>
-                        <h2>${p.title}</h2>
-                        <p>${p.desc}</p>
-                    </div>
-                    <div class="price-box">${p.price}</div>
-                `;
-                feed.appendChild(div);
-            });
-        }
+    let currentView = 'gig';
 
-        // check url param for initial view
-        const params = new URLSearchParams(window.location.search);
-        const initialView = params.get("view");
+    function getViewFromUrl() {
+      const params = new URLSearchParams(window.location.search);
+      const v = params.get("view");
+      return (v === "gig" || v === "learn" || v === "jam") ? v : null;
+    }
 
-        if (initialView) {
-            currentView = initialView;
-            if (initialView == "gig") pageTitle.textContent = "Gigs";
-            else if (initialView == "learn") pageTitle.textContent = "Learn";
-            else if (initialView == "jam") pageTitle.textContent = "Jam";
 
-            document.querySelectorAll('.menu a').forEach(a => a.classList.remove('active'));
+    function renderFeed() {
+      feed.innerHTML = '';
+      posts.filter(p => p.type === currentView).forEach(p => {
+        const div = document.createElement('div');
+        div.className = 'post';
+        div.onclick = () => location.href = 'post.html';
+        div.innerHTML = `
+          <div class="post-left">
+            <span class="badge ${p.type}">${p.type.toUpperCase()}</span>
+            <h2>${p.title}</h2>
+            <p>${p.desc}</p>
+          </div>
+          <div class="price-box">${p.price}</div>
+        `;
+        feed.appendChild(div);
+      });
+    }
 
-            const link = document.querySelector(`.menu a[href="gigs.html?view=${initialView}"]`);
-            if (link) link.classList.add('active');
-        }
+    function setView(type) {
+      currentView = type;
+      pageTitle.textContent = type.charAt(0).toUpperCase() + type.slice(1);
+      document.querySelectorAll('.menu a').forEach(a => a.classList.remove('active'));
+      event.target.classList.add('active');
+      renderFeed();
+    }
 
-        renderFeed();
-    </script>
+    menuBtn.addEventListener('click', () => {
+      sideMenu.style.display = sideMenu.style.display === 'block' ? 'none' : 'block';
+    });
+
+    const initial = getViewFromUrl();
+    if (initial) currentView = initial;
+    pageTitle.textContent = currentView.charAt(0).toUpperCase() + currentView.slice(1);
+    renderFeed();
+  </script>
 
 </body>
 </html>

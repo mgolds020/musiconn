@@ -1,0 +1,268 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Map</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="/styles/map.css" />
+  </head>
+
+  <body>
+    <header>
+      <div class="left">
+        <i data-lucide="menu" class="icon-btn" id="menuBtn"></i>
+      </div>
+
+      <h1>Musiconn</h1>
+
+      <div class="right">
+        <i data-lucide="user" class="icon-btn" onclick="location.href='profile.html'"></i>
+      </div>
+    </header>
+
+    <div id="layout" class="container">
+      <!-- NAV MENU -->
+      <nav class="menu" id="sideMenu">
+        <a href="/map" class="active">Map</a>
+        <a href="/gigs?view=gig">Gigs</a>
+        <a href="/gigs?view=learn">Learn</a>
+        <a href="/gigs?view=jam">Jam</a>
+      </nav>
+
+
+      <!-- MAP -->
+      <div class="map-wrap">
+        <div id="map-search-overlay">
+          <button id="map-search-btn" disabled>Search this location</button>
+        </div>
+
+        <div id="locate-btn" title="Go to my location">📍</div>
+
+        <div id="map"></div>
+      </div>
+
+      <!-- Search results sidebar -->
+      <aside id="sidebar" class="results hidden" aria-hidden="true">
+        <div class="results-header">
+          <div class="results-title">Results</div>
+          <button id="closeResultsBtn" class="close-btn" type="button" aria-label="Close results">
+            ✕
+          </button>
+        </div>
+
+        <div id="resultsBody" class="results-body">
+          <!-- filled by JS -->
+        </div>
+      </aside>
+
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <script>
+      lucide.createIcons();
+
+      // ----- MENU TOGGLE -----
+      const menuBtn = document.getElementById("menuBtn");
+      const sideMenu = document.getElementById("sideMenu");
+
+      menuBtn.addEventListener("click", () => {
+        const open = sideMenu.style.display !== "block";
+        sideMenu.style.display = open ? "block" : "none";
+        document.body.classList.toggle("menu-open", open);
+      });
+
+
+      // ----- MAP -----
+      const map = L.map("map");
+      L.tileLayer(
+        "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
+        { attribution: "© OpenStreetMap contributors © CARTO" }
+      ).addTo(map);
+
+      const sidebar = document.getElementById("sidebar");
+      const resultsBody = document.getElementById("resultsBody");
+      const closeResultsBtn = document.getElementById("closeResultsBtn");
+
+      const searchBtn = document.getElementById("map-search-btn");
+      const locateBtn = document.getElementById("locate-btn");
+      const MAX_RADIUS_MILES = 40;
+
+      let activeMarkers = [];
+      let activeBounds = [];
+
+      function clearResults() {
+        activeMarkers.forEach(m => map.removeLayer(m));
+        activeMarkers = [];
+        activeBounds = [];
+        resultsBody.innerHTML = "";
+      }
+
+      function showResultsSidebar() {
+        sidebar.classList.remove("hidden");
+        sidebar.setAttribute("aria-hidden", "false");
+      }
+
+      function hideResultsSidebar() {
+        sidebar.classList.add("hidden");
+        sidebar.setAttribute("aria-hidden", "true");
+      }
+
+      closeResultsBtn.addEventListener("click", hideResultsSidebar);
+
+
+      function formatPrice(post) {
+        const low = Number(post.priceLowBound ?? 0);
+        const high = Number(post.priceHighBound ?? 0);
+        if (low === 0 && high === 0) return "Free";
+        if (low === high) return `$${low}`;
+        return `$${low}–$${high}`;
+      }
+
+      function renderPosts(posts) {
+        clearResults();
+        showResultsSidebar();
+
+        if (!Array.isArray(posts) || posts.length === 0) {
+          resultsBody.innerHTML = `<div class="empty-state">Nothing was found here.</div>`;
+          return;
+        }
+
+        for (const post of posts) {
+          const coords = post?.location?.coordinates;
+          if (!coords || coords.length !== 2) continue;
+
+          const [lng, lat] = coords;
+          if (!Number.isFinite(lng) || !Number.isFinite(lat)) continue;
+
+          const latlng = [lat, lng];
+          activeBounds.push(latlng);
+
+          const marker = L.circleMarker(latlng, {
+            radius: 8,
+            weight: 2,
+          }).addTo(map);
+
+          activeMarkers.push(marker);
+
+          const priceText = formatPrice(post);
+
+          const title = post.title ?? "(untitled)";
+          const type = post.type ?? "";
+          const address = post.address ?? "";
+          const description = post.description ?? "";
+
+          const eventDate = post.eventDate ? new Date(post.eventDate).toLocaleString() : "";
+          const datePosted = post.datePosted ? new Date(post.datePosted).toLocaleDateString() : "";
+
+          marker.bindPopup(`
+            <div>
+              <strong>${title}</strong>
+              <div>${address}</div>
+
+              <div style="margin-top: 6px;">
+                ${description}
+              </div>
+
+              <div style="margin-top: 6px;">
+                ${eventDate ? `<div>Event date: ${eventDate}</div>` : ""}
+                ${datePosted ? `<div>Posted: ${datePosted}</div>` : ""}
+              </div>
+
+              <div style="margin-top: 6px;">
+                Price: ${priceText}
+              </div>
+            </div>
+          `);
+
+          const btn = document.createElement("button");
+          btn.type = "button";
+          btn.className = "sidebar-item";
+          btn.innerHTML = `
+            <div class="sidebar-title">${title}</div>
+            <div class="sidebar-meta">${type}${address ? ` • ${address}` : ""}</div>
+          `;
+
+          btn.addEventListener("click", () => {
+            map.setView(latlng, 14);
+            marker.openPopup();
+          });
+
+          resultsBody.appendChild(btn);
+        }
+
+        if (activeBounds.length === 1) {
+          map.setView(activeBounds[0], 14);
+        } else if (activeBounds.length > 1) {
+          map.fitBounds(activeBounds);
+        }
+
+        updateSearchButtonState();
+      }
+
+
+      locateBtn.addEventListener("click", () => {
+        if (!navigator.geolocation) return alert("Geolocation not supported.");
+        navigator.geolocation.getCurrentPosition(
+          (pos) => map.setView([pos.coords.latitude, pos.coords.longitude], 13),
+          () => alert("Unable to retrieve your location."),
+          { enableHighAccuracy: true, timeout: 10000 }
+        );
+      });
+
+      function currentRadiusMiles() {
+        const b = map.getBounds();
+        const c = map.getCenter();
+        const northPoint = L.latLng(b.getNorth(), c.lng);
+        const meters = map.distance(c, northPoint);
+        return meters / 1609.344;
+      }
+
+      function updateSearchButtonState() {
+        if (!map._loaded) return;
+        const enabled = currentRadiusMiles() <= MAX_RADIUS_MILES;
+        searchBtn.disabled = !enabled;
+        searchBtn.classList.toggle("enabled", enabled);
+      }
+
+      searchBtn.addEventListener("click", async () => {
+        if (searchBtn.disabled) return;
+
+        const center = map.getCenter();
+        const radiusMiles = Math.min(currentRadiusMiles(), MAX_RADIUS_MILES);
+
+        try {
+          const res = await fetch("/posts", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              location: { type: "Point", coordinates: [center.lng, center.lat] },
+              distanceMiles: radiusMiles
+            })
+          });
+
+          const data = await res.json();
+          if (!res.ok) return console.error("Search failed:", data);
+
+          renderPosts(Array.isArray(data) ? data : []);
+        } catch (err) {
+          console.error(err);
+        }
+      });
+
+      map.on("moveend", updateSearchButtonState);
+      map.on("zoomend", updateSearchButtonState);
+
+      map.setView([42.3601, -71.0589], 11);
+      hideResultsSidebar();
+      updateSearchButtonState();
+    </script>
+  </body>
+</html>

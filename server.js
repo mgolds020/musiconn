@@ -9,19 +9,225 @@ const fs = require('fs');
 const mongo = require('mongodb');
 const jwt = require('jsonwebtoken');
 
+const { loadFile, authenticateToken, jsonResponse, manageCollection } = require('./utilities');
+
 // connecting and serving information
 const PORT = 3000;
-
-const MongoClient = mongo.MongoClient;
 
 http.createServer((req, res) => {
     // res.writeHead(200, {'Content-Type': 'text/html'});
     const path = urlObj.parse(req.url).pathname;
 
-    if(path === "/" && req.method === 'GET') {
-        loadFile('views/homepage.html', res);
-    } else if (path === 'profile' && req.method === 'GET' ) {
-        loadFile('views/profile.html', res);
+    // Serve files for assets requested by pages (css/js/images)
+    // Example: browser requests /styles/map.css -> serve ./styles/map.css
+    if (path && (path.startsWith('/styles/') || path.startsWith('/scripts/') || path.startsWith('/images/') || path.match(/\.(css|js|png|jpg|jpeg|svg)$/))) {
+        const staticPath = path.slice(1); // remove leading '/'
+        fs.readFile(staticPath, (err, data) => {
+            if (err) {
+                res.writeHead(404, { 'Content-Type': 'text/plain' });
+                res.end('Not found');
+                return;
+            }
+
+            let contentType = 'application/octet-stream';
+            if (staticPath.endsWith('.css')) contentType = 'text/css';
+            else if (staticPath.endsWith('.js')) contentType = 'application/javascript';
+            else if (staticPath.endsWith('.png')) contentType = 'image/png';
+            else if (staticPath.endsWith('.jpg') || staticPath.endsWith('.jpeg')) contentType = 'image/jpeg';
+            else if (staticPath.endsWith('.svg')) contentType = 'image/svg+xml';
+
+            res.writeHead(200, { 'Content-Type': contentType });
+            res.end(data);
+        });
+        return;
+    }
+
+    if (path === "/" && req.method === "GET") {
+        loadFile("views/map.html", res);
+
+    } else if (path === "/login" && req.method === "GET") {
+        loadFile("views/login.html", res);
+
+    } else if (path === "/signup" && req.method === "GET") {
+        loadFile("views/signup.html", res);
+
+    } else if (path === "/gigs" && req.method === "GET") {
+        loadFile("views/gigs.html", res);
+
+    } else if (path === "/users" && req.method === "GET") {
+
+        authenticateToken(req, res, (tokenPayload) => {
+            const qObj = urlObj.parse(req.url, true).query;
+            const username = qObj.username;
+            
+            manageCollection(res, 'users', (res, collection, client) => {
+                collection.findOne( { username: username }, (err, user) => {
+                    if(err) {
+                        console.log(`Error qeurying: ${err}`);
+                        jsonResponse(res, 500, { error: 'Database query error' });
+                        client.close();
+                        return;
+                    }
+
+                    if (!user) {
+                        console.log(`Invalid Post Id`);
+                        jsonResponse(res, 403, { error: 'No such User Exists'});
+                        client.close();
+                        return;
+                    }
+
+                    jsonResponse(res, 200, user);
+                    client.close();
+                });
+            });
+        });
+
+        // loadFile("views/profile.html", res);
+    } else if (path === "/map" && req.method === "GET") {
+        loadFile("views/map.html", res);
+    } else if (path === "/posts" && req.method === "POST") {
+        let myFormData = '';
+        req.on('data', newData => { myFormData += newData.toString(); });
+        // end = event when data stops being sent
+        req.on('end', () => {
+            let body;
+            try {
+                body = JSON.parse(myFormData);
+            } catch {
+                return jsonResponse(res, 400, { error: "Invalid JSON" });
+            }
+
+            const lon = Number(body?.location?.coordinates?.[0]);
+            const lat = Number(body?.location?.coordinates?.[1]);
+            const miles = Number(body?.distanceMiles ?? 20);
+            const distance = miles / 3958.8; // miles → radians
+            const types = body?.types;
+
+            if (!Number.isFinite(lon) || !Number.isFinite(lat)) {
+                return jsonResponse(res, 400, {
+                    error: "Invalid coordinates",
+                    received: body
+                });
+            }
+
+            // pre-build the query, conditionally filtering event type
+            const query = {
+                location: {
+                    $geoWithin: {
+                        $centerSphere: [
+                            [lon, lat],
+                            distance
+                        ]
+                    }
+                }
+            }
+
+            if(Array.isArray(types) && types.length > 0) {
+                query.type = { $in: types };
+            }
+
+            // run a geospatial query returning
+            manageCollection(res, 'posts', (res, collection, client) => {
+                collection.find(query).toArray((err, events) => {
+                    if(err) {
+                        console.log("Query Error: " + err);
+                        client.close();
+                        return jsonResponse(res, 500, {error: "Database Query Error"});
+                    }
+
+                    console.log("Geo query returned", events.length, "documents");
+                    console.log(events.map(e => ({
+                        title: e.title,
+                        coords: e.location?.coordinates
+                    })));
+
+                    jsonResponse(res, 200, events);
+                    client.close();
+                });
+            });
+      
+        });
+
+    } else if (path === '/posts/delete' && req.method === 'POST' ) {
+        let myFormData = '';
+        req.on('data', newData => { myFormData += newData.toString(); });
+        // end = event when data stops being sent
+        req.on('end', () => {
+            const parsedData = qs.parse(myFormData);
+            const postId = parsedData.postId;
+            authenticateToken(req, res, (tokenInfo) => {
+                manageCollection(res, 'posts', (res, collection, client) => {
+                    collection.findOne( { _id: new mongo.ObjectId(postId) }, (err, post) => {
+
+                        if(err) {
+                            console.log(`Error qeurying: ${err}`);
+                            jsonResponse(res, 500, { error: 'Database query error' });
+                            client.close();
+                            return;
+                        }
+
+                        if (!post) {
+                            console.log(`Invalid Post Id`);
+                            jsonResponse(res, 403, { error: 'No such Post Exists'});
+                            client.close();
+                            return;
+                        }
+
+                        if(post.authorId.toString() !== tokenInfo.sub) {
+                            console.log(`User ${tokenInfo.username} tried to delete someone else's post`);
+                            jsonResponse(res, 401, { error: 'Unauthorized Delete' });
+                            client.close();
+                            return;
+                        }
+                        
+                        collection.deleteOne( { _id: new mongo.objectId(postId) }, (err, result) => {
+                            if(err) {
+                                console.log(`Error deleting post: ${err}`);
+                                jsonResponse(res, 500, { error: 'Database Delete Error' });
+                                client.close();
+                                return;
+                            }
+
+                            console.log(`Post deleted successfully`);
+                            jsonResponse(res, 200, { message: 'Post Deleted Successfully' });
+                            client.close();
+                        });
+                    });
+                });
+            });
+        });
+    } else if (path === '/posts/create' && req.method === 'POST') {
+        let myFormData = '';
+        req.on('data', newData => { myFormData += newData.toString(); });
+        // end = event when data stops being sent
+        req.on('end', () => {
+            const postData = qs.parse(myFormData).post;
+
+            const post = createPostObject(postData);
+            if (!post) return jsonResponse(res, 400, { error: 'Unable to create post'});
+
+            authenticateToken(req, res, (tokenInfo) => {
+                manageCollection(res, 'posts', (res, collection, client) => {
+
+                    const userId = tokenInfo.sub;
+                    post.authorId = new mongo.ObjectId(userId);
+
+                    collection.insertOne(post, (err) => {
+
+                        if(err) {
+                            console.log(`Insertion error: ${err}`);
+                            client.close();
+                            return jsonResponse(res, 500, { error: 'Error Creating User'})
+                        }
+
+                        console.log("Post successfully created");
+                        client.close();
+                        return jsonResponse(res, 201, { message: "Post created" });
+                        
+                    });
+                });
+            });
+        });
     } else {
         res.writeHead(303, {Location: '/'});
         res.end('');
@@ -29,45 +235,69 @@ http.createServer((req, res) => {
 
 }).listen(PORT);
 
-/** loadFile
- *  Helper funtion to load/render a file stored at pathname using the fs module
- */
-function loadFile(pathname, res) {
-    fs.readFile(pathname, (err, fileContents) => {
-        if(err) {
-            console.log(`ERROR: Cannot read ${pathname}`);
-            return jsonResponse(res, 500, { error: 'Cannot Load File or Resource' });
+
+// function to validate and return a post object in the correct format
+
+function createPostObject(post) {
+
+    // data validation
+
+    // required fields
+    const type = String(post?.type ?? '').trim();
+    const title = String(post?.title ?? '').trim();
+    const description = String(post?.description ?? '').trim();
+    const latitude = Number(post?.latitude);
+    const longitude = Number(post?.longitude);
+
+
+    const allowedTypes = new Set(['gig', 'event', 'lesson']);
+
+    if (!allowedTypes.has(type)) {
+        jsonResponse(res, 400, { error: 'Invalid type', allowed: Array.from(allowedTypes) });
+        return;
+    }
+    if (!title){
+        jsonResponse(res, 400, { error: 'Missing title' });
+        return;
+    };
+    if (!description){ 
+        jsonResponse(res, 400, { error: 'Missing description' });
+        return;
+    };
+    if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+        jsonResponse(res, 400, { error: 'Invalid latitude/longitude' });
+        return;
+    }
+
+    // Optional fields - set null if they were not posted
+    const address = post?.address ? String(post.address).trim() : '';
+    const priceLowBound = post?.priceLowBound != null ? Number(post.priceLowBound) : null;
+    const priceHighBound = post?.priceHighBound != null ? Number(post.priceHighBound) : null;
+
+    // optionally accept and validate event date
+    const eventDate = post?.eventDate ? new Date(post.eventDate) : null;
+
+    if (post?.eventDate && isNaN(eventDate.getTime())) {
+        jsonResponse(res, 400, { error: 'Invalid eventDate' });
+        return;
+    }
+
+    const newPost = {
+        type: type,
+        title: title,
+        description: description,
+        datePosted: new Date(),
+        address: address,
+        priceLowBound: priceLowBound,
+        priceHighBound: priceHighBound,
+        location: {
+            type: 'Point',
+            coordinates: [longitude, latitude]
         }
-        res.write(fileContents);
-        res.end("");
-    });
+    };
+
+    if (eventDate) newPost.eventDate = eventDate;
+
+    return newPost;
 }
 
-/**
- * Helper function for sending json replacing express's res.json (with less input flexibility)
- */
-function jsonResponse(res, status, data) {
-    res.writeHead(status, { 'Content-type': 'application/json' });
-    res.end(JSON.stringify(data ?? {}));
-}
-
-/** 
- *  Helper function that authenticates the jwt token implimented
- */
-function authenticateToken(req, res, callback) {
-    const authHeader = req.headers['authorization'];
-    // if authHeader exists, grab the 'token' from 'BEARER {token}'
-    const token = authHeader && authHeader.split(' ')[1]; 
-
-    if(token == null) return jsonResponse(res, 401, { error: 'No Token' });
-
-    // verify token
-    jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, accessPayload) => {
-        if(err) return jsonResponse(res, 403, { error: 'Invalid Token' });
-
-        req.user = accessPayload;
-        callback();
-    });
-
-
-}

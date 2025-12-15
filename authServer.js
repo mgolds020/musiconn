@@ -10,13 +10,38 @@ const mongo = require('mongodb');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 
+const { loadFile, jsonResponse, manageCollection } = require('./utilities');
+
 // connecting and serving information
 const PORT = 8080;
 
-const MongoClient = mongo.MongoClient;
+// allow CORS requests from the client server
+function handleCORS(req, res) {
+  res.setHeader("Access-Control-Allow-Origin", "http://localhost:3000");
+  res.setHeader("Access-Control-Allow-Credentials", "true");
+  res.setHeader(
+    "Access-Control-Allow-Headers",
+    "Content-Type, Authorization"
+  );
+  res.setHeader(
+    "Access-Control-Allow-Methods",
+    "GET, POST, OPTIONS"
+  );
+
+  // Preflight request
+  if (req.method === "OPTIONS") {
+    res.writeHead(204);
+    res.end();
+    return true;
+  }
+  return false;
+}
 
 http.createServer((req, res) => {
     // res.writeHead(200, {'Content-Type': 'text/html'});
+
+    if (handleCORS(req, res)) return;
+
     const path = urlObj.parse(req.url).pathname;
 
     if (path === '/signup' && req.method === 'GET') {
@@ -44,7 +69,7 @@ http.createServer((req, res) => {
 
             const hashedPass = bcrypt.hashSync(passwordEntered, 10);
             
-            manageUsersCollection(res, (res, collection, client) => {
+            manageCollection(res, 'users', (res, collection, client) => {
                 
                 collection.findOne({username: usernameEntered}, (err, user) => {
 
@@ -57,7 +82,7 @@ http.createServer((req, res) => {
 
                     if (user) {
                         console.log("Username Already Exists");
-                        jsonResponse(res, 403, { error: 'Forbidden' });
+                        jsonResponse(res, 409, { error: 'Username already exists' });
                         client.close();
                         return;
                     }
@@ -70,8 +95,9 @@ http.createServer((req, res) => {
                         } else {
                             // redirect user to log in page
                             console.log("User successfully created, redirecting to login page");
-                            res.writeHead(303, {Location: '/login'});
-                            res.end('');
+                            jsonResponse(res, 201, { message: "User created" });
+                            client.close();
+                            return;
                         }
 
                         client.close();
@@ -102,7 +128,7 @@ http.createServer((req, res) => {
                 return jsonResponse(res, 400, { error: 'Bad Input' });
             }
 
-            manageUsersCollection(res, (res, collection, client) => {
+            manageCollection(res, 'users', (res, collection, client) => {
                 // find the user in our database
                 collection.findOne({username: usernameEntered}, (err, dbUser) => {
 
@@ -122,87 +148,138 @@ http.createServer((req, res) => {
 
                     const passwordMatch = bcrypt.compareSync(passwordEntered, dbUser.password);
 
-                    if(passwordMatch) {
-                        console.log('Login Successful');
-
-                        // create an object with the fields we want to sign with our secret key
-                        const tokenPayload = {
-                            sub: dbUser._id.toString(),
-                            username: dbUser.username,
-                        }
-
-                        // create token and send it in the response
-                        const accessToken = generateAccessToken(tokenPayload);
-                        const refreshToken = jwt.sign(tokenPayload, process.env.REFRESH_TOKEN_SECRET);
-                        jsonResponse(res, 200, {
-                            message: 'Login Success',
-                            accessToken: accessToken,
-                            refreshToken: refreshToken
-                         });
-
-                    } else {
+                    // check if user password = the stored password
+                    if(!passwordMatch) {
                         console.log('Incorrect password');
                         jsonResponse(res, 401, { error: 'Incorrect Password'});
+                        client.close();
+                        return;
                     }
 
-                    client.close();
-    
+                    // if we make it here, user credentials are valid
+
+                    // create an object with the fields we want to sign with our secret key
+                    const tokenPayload = {
+                        sub: dbUser._id.toString(),
+                        username: dbUser.username,
+                    }
+
+                    // create tokens
+                    const accessToken = generateAccessToken(tokenPayload);
+                    const refreshToken = jwt.sign(tokenPayload, process.env.REFRESH_TOKEN_SECRET, { expiresIn: "7d" });
+                    
+                    // store the refresh token with this user in the database
+                    collection.updateOne({ _id: dbUser._id }, { $set: { refreshToken: refreshToken} }, (err) => {
+                        if (err) {
+                            console.log("ERROR: cannot save refresh token"); 
+                            // TO DO: should log the user out?
+                            jsonResponse(res, 500, { error: 'Error saving refresh token'}); 
+                            client.close();
+                            return;
+                        } 
+
+                        // send encrypted tokens to the front end
+                        setRefreshCookie(res, refreshToken);
+
+                        res.writeHead(200, {
+                            "Content-Type": "application/json",
+                            "Access-Control-Allow-Origin": "http://localhost:3000",
+                            "Access-Control-Allow-Credentials": "true",
+                        });
+                        res.end(JSON.stringify({
+                            message: "Login Success",
+                            accessToken: accessToken
+                        }));
+
+                        client.close();
+                        return;
+                    });
+
                 });
             });
         });
 
     } else if (path === "/token" && req.method == 'POST') {
-        req.on('data', newData => { myFormData += newData.toString(); });
-        req.on('end', () => {
-            const parsedData = qs.parse(myFormData);
-            const refreshToken = parsedData.token;
-        })
 
+        // read refresh token from cookie (preferred)
+        const cookies = parseCookies(req);
+        const refreshToken = cookies.refreshToken;
+
+        if (!refreshToken) {
+            return jsonResponse(res, 401, { error: "Unauthorized: missing refresh token" });
+            // TO DO: Should I log out? 
+        }
+
+        let payload;
+        try {
+            payload = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET);
+        } catch (e) {
+            return jsonResponse(res, 403, { error: "Forbidden: invalid refresh token" });
+        }
+
+        manageCollection(res, 'users', (res, collection, client) => {
+                // confirm token matches what we stored for this user
+            collection.findOne({ _id: new mongo.ObjectId(payload.sub)}, (err, dbUser) => {
+                if (err || !dbUser) {
+                    client.close();
+                    return jsonResponse(res, 401, { error: "Unauthorized" });
+                }
+
+                if (dbUser.refreshToken !== refreshToken) {
+                    client.close();
+                    return jsonResponse(res, 403, { error: "Forbidden: token mismatch" });
+                }
+
+                // issue a new access token
+                const newAccessToken = generateAccessToken({
+                    sub: dbUser._id.toString(),
+                    username: dbUser.username
+                });
+
+                client.close();
+                return jsonResponse(res, 200, { accessToken: newAccessToken });
+            });
+        });
+       
+
+    }
+    else {
+        jsonResponse(res, 404, { error: "Not Found" });
     }
 
 }).listen(PORT);
 
-/** loadFile
- *  Helper funtion to load/render a file stored at pathname using the fs module
- */
-function loadFile(pathname, res) {
-    fs.readFile(pathname, (err, fileContents) => {
-        if(err) {
-            console.log(`ERROR: Cannot read ${pathname}`);
-            return jsonResponse(res, 500, { error: 'Cannot Load File or Resource' });
-        }
-        res.write(fileContents);
-        res.end("");
-    });
-}
-
-function manageUsersCollection(res, callback) {
-
-        MongoClient.connect(process.env.CONNECTION_STRING, (err, client) => {
-        // error handling
-        if(err) {
-            console.log(`Connection Error: ${err}`);   
-            return jsonResponse(res, 500, { error: 'Database Connection Error' });
-        }
-
-        // select user collection from our final project database
-        const dbo = client.db('FinalProject');
-        const collection = dbo.collection('users');
-
-        // call the callback function
-        callback(res, collection, client);
-    });
-}
-
-/**
- * Helper function for sending json replacing express's res.json (with less input flexibility)
- */
-function jsonResponse(res, status, data) {
-    res.writeHead(status, { 'Content-type': 'application/json' });
-
-    res.end(JSON.stringify(data ?? {}));
-}
-
 function generateAccessToken(payload) {
     return jwt.sign(payload, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '15m'});
+}
+
+function parseCookies(req) {
+  const header = req.headers.cookie;
+  if (!header) return {};
+  const out = {};
+  header.split(";").forEach(part => {
+    const [k, ...v] = part.trim().split("=");
+    out[k] = decodeURIComponent(v.join("="));
+  });
+  return out;
+}
+
+function setRefreshCookie(res, refreshToken) {
+  // For local dev over http, omit Secure. In production over https, add Secure.
+  const cookie = [
+    `refreshToken=${encodeURIComponent(refreshToken)}`,
+    "HttpOnly",
+    "SameSite=Lax",
+    "Path=/",
+    // "Secure", // enable when serving over https
+    // "Max-Age=604800" // optional: 7 days
+  ].join("; ");
+  res.setHeader("Set-Cookie", cookie);
+}
+
+function clearRefreshCookie(res) {
+  res.setHeader(
+    "Set-Cookie",
+    "refreshToken=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0"
+  );
 }

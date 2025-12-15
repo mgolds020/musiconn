@@ -1,0 +1,140 @@
+:root {
+      --red: #e63946;
+      --black: #111;
+      --gray: #666;
+      --light-gray: #f4f4f4;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Inter', sans-serif;
+    }
+
+    body {
+      background: #fff;
+    }
+
+    .subheader {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 40px;
+      border-bottom: 1px solid #eee;
+    }
+
+    .subheader h2 {
+      font-size: 20px;
+      font-weight: 600;
+    }
+
+    /* Top Bar */
+    header {
+      height: 60px;
+      border-bottom: 1px solid #eee;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 24px;
+    }
+
+    .left, .right {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    header h1 {
+      font-size: 18px;
+      font-weight: 600;
+    }
+
+    .icon-btn {
+      cursor: pointer;
+      color: var(--gray);
+      transition: color 0.15s ease;
+    }
+
+    .icon-btn:hover {
+      color: var(--black);
+    }
+
+    /* Layout */
+    .container {
+      display: flex;
+    }
+
+    /* Slide Menu */
+    .menu {
+      width: 220px;
+      border-right: 1px solid #eee;
+      padding: 24px;
+      display: none;
+    }
+
+    .menu a {
+      display: block;
+      margin-bottom: 16px;
+      text-decoration: none;
+      color: var(--black);
+      font-weight: 500;
+    }
+
+    .menu a.active {
+      color: var(--red);
+    }
+
+    /* Feed */
+    .feed {
+      flex: 1;
+      padding: 24px 40px;
+    }
+
+    .post {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #eee;
+      padding: 20px 0;
+      cursor: pointer;
+    }
+
+    .post-left {
+      max-width: 70%;
+    }
+
+    .price-box {
+      border: 1px solid #ddd;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      background: var(--light-gray);
+    }
+
+    .post h2 {
+      font-size: 16px;
+      margin-bottom: 6px;
+    }
+
+    .post p {
+      font-size: 14px;
+      color: var(--gray);
+    }
+
+    .badge {
+      display: inline-block;
+      font-size: 12px;
+      padding: 4px 8px;
+      border-radius: 6px;
+      margin-bottom: 8px;
+    }
+
+    .gig { background: rgba(230,57,70,0.1); color: var(--red); }
+    .learn { background: #f1f1f1; color: var(--black); }
+    .jam { background: #111; color: white; }
+
+    .h1 {
+        color: black
+    }
