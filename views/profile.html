@@ -1,9 +1,349 @@
 <!DOCTYPE html>
-<html>
-    <head>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Profile • Musiconn</title>
 
-    </head>
-    <body>
+    <!-- google fonts + icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
 
-    </body>
+    <style>
+        :root {
+            --red:#e63946;
+            --gray:#666;
+            --black:#111;
+            --light:#f4f4f4;
+        }
+        * { margin:0; padding:0; box-sizing:border-box; font-family:'Inter',sans-serif; }
+
+        body { background:white; }
+
+        header {
+            height:60px; border-bottom:1px solid #eee;
+            display:flex; align-items:center; justify-content:space-between;
+            padding:0 24px;
+        }
+        header h1 { font-size:18px; font-weight:600; }
+        .icon-btn { cursor:pointer; color:var(--gray); }
+        .icon-btn:hover { color:var(--black); }
+
+        .banner {
+            height:180px;
+            background:linear-gradient(135deg,#e63946,#ff8fa3);
+        }
+
+        .profile-container {
+            max-width:900px;
+            margin:0 auto;
+            padding:0 24px;
+            position:relative;
+            top:-40px;
+        }
+
+        .pfp {
+            width:110px; height:110px;
+            border-radius:50%; background:#ccc;
+            border:4px solid white;
+        }
+
+        .name { font-size:26px; font-weight:600; margin-top:12px; }
+        .bio { color:var(--gray); margin-top:6px; }
+
+        .section-title {
+            font-size:18px; font-weight:600;
+            margin:32px 0 12px;
+        }
+
+        /* posts carousel */
+        .carousel {
+            display:flex; gap:16px; overflow-x:auto; padding-bottom:10px;
+        }
+
+        .post-card {
+            min-width:220px;
+            border:1px solid #eee; border-radius:12px;
+            padding:16px; background:white;
+            cursor:pointer;
+        }
+        .post-card h3 { font-size:16px; margin-bottom:6px; }
+        .post-card p { color:var(--gray); font-size:14px; }
+
+        /* creat post button */
+        .add-btn {
+            position:fixed;
+            bottom:24px; right:24px;
+            width:60px; height:60px;
+            border-radius:50%;
+            background:var(--red);
+            display:flex; align-items:center; justify-content:center;
+            cursor:pointer;
+        }
+        .add-btn i { color:white; }
+
+        /* pop-up */
+        .modal-bg {
+            display:none;
+            position:fixed; inset:0;
+            background:rgba(0,0,0,0.4);
+            align-items:center; justify-content:center;
+        }
+
+        .modal {
+            width:420px;
+            background:white;
+            border-radius:12px;
+            padding:24px;
+            box-shadow:0 8px 24px rgba(0,0,0,0.15);
+        }
+        .modal h2 { margin-bottom:16px; }
+
+        .field { margin-bottom:14px; }
+        .field label { display:block; margin-bottom:4px; font-size:14px; }
+        .field input, .field select, .field textarea {
+            width:100%; padding:10px; border:1px solid #ccc;
+            border-radius:8px;
+        }
+        textarea { height:90px; resize:none; }
+
+        .save-btn {
+            width:100%; background:var(--red); color:white;
+            border:none; padding:12px; border-radius:8px; cursor:pointer;
+        }
+
+        /* bands sidebar */
+        .profile-layout {
+            display:flex;
+            gap:32px;
+            flex-direction:row-reverse;
+        }
+
+        .bands-sidebar {
+            width:250px;
+        }
+
+        .band-card {
+            display:flex;
+            align-items:center;
+            gap:12px;
+            padding:12px;
+            border:1px solid #eee;
+            border-radius:10px;
+            margin-bottom:12px;
+            cursor:pointer;
+        }
+
+        .band-pfp {
+            width:48px; height:48px;
+            border-radius:50%;
+            background:#ccc;
+        }
+
+        /* tags */
+        .pill-container { display:flex; gap:8px; }
+        .pill {
+            padding:6px 12px;
+            border-radius:20px;
+            background:#eee;
+            cursor:pointer;
+            user-select:none;
+        }
+        .pill.active {
+            background:var(--red);
+            color:white;
+        }
+
+        /* gallery */
+        #gallery {
+            display:grid;
+            grid-template-columns:repeat(3,1fr);
+            gap:12px;
+        }
+        .gallery-item {
+            height:100px;
+            background:#ddd;
+            border-radius:8px;
+        }
+    </style>
+</head>
+
+<body>
+
+<header>
+    <i data-lucide="arrow-left" class="icon-btn" onclick="history.back()"></i>
+    <h1>Musiconn</h1>
+    <i data-lucide="user" class="icon-btn"></i>
+</header>
+
+<div class="banner"></div>
+
+<div class="profile-container">
+    <div class="pfp" id="pfpDisplay"></div>
+    <input type="file" id="pfpUpload" accept="image/*" style="margin-top:12px;">
+    <div class="name">Cool Band</div>
+    <div class="bio">We play indie rock and love collaborating with new artists.</div>
+
+    <div class="profile-layout">
+        <!-- bands sidebar -->
+        <div class="bands-sidebar">
+            <div class="section-title">Your Bands</div>
+            <div id="bandList">
+                <div class="band-card">
+                    <div class="band-pfp"></div>
+                    <div>
+                        <div style="font-weight:600;">Indie Rock Band</div>
+                        <div style="font-size:14px; color:var(--gray);">5 members</div>
+                    </div>
+                </div>
+
+                <div class="band-card">
+                    <div class="band-pfp"></div>
+                    <div>
+                        <div style="font-weight:600;">Jazz Collective</div>
+                        <div style="font-size:14px; color:var(--gray);">3 members</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- main profile -->
+        <div style="flex:1;">
+            <div class="section-title">Tags</div>
+            <div class="pill-container" id="tagContainer">
+                <span class="pill">Guitar</span>
+                <span class="pill">Rock</span>
+                <span class="pill">Indie</span>
+            </div>
+
+            <div class="section-title">Posts</div>
+            <div class="carousel" id="postCarousel"></div>
+
+            <div class="section-title">Gallery</div>
+            <div id="gallery">
+                <div class="gallery-item">Photo</div>
+                <div class="gallery-item">Photo</div>
+                <div class="gallery-item">Video</div>
+            </div>
+
+            <input type="file" id="galleryUpload" accept="image/*,video/*" style="margin-top:12px;">
+        </div>
+    </div>
+</div>
+
+<!-- create post button -->
+<div class="add-btn" id="addPostBtn">
+    <i data-lucide="plus"></i>
+</div>
+
+<!-- create post pop-up -->
+<div class="modal-bg" id="modalBg">
+    <div class="modal">
+        <h2>Create Post</h2>
+
+        <div class="field">
+            <label>Title</label>
+            <input type="text" id="postTitle">
+        </div>
+
+        <div class="field">
+            <label>Type</label>
+            <select id="postType">
+                <option value="gig">Gig</option>
+                <option value="learn">Learn</option>
+                <option value="jam">Jam</option>
+            </select>
+        </div>
+
+        <div class="field">
+            <label>Date & Time</label>
+            <input type="text" id="postDate" placeholder="Feb 12, 2026 @ 8pm">
+        </div>
+
+        <div class="field">
+            <label>Location</label>
+            <input type="text" id="postLocation">
+        </div>
+
+        <div class="field">
+            <label>Price</label>
+            <input type="text" id="postPrice">
+        </div>
+
+        <div class="field">
+            <label>Description</label>
+            <textarea id="postDesc"></textarea>
+        </div>
+
+        <button class="save-btn" id="savePostBtn">Save Post</button>
+    </div>
+</div>
+
+<script>
+    lucide.createIcons();
+
+    // MOCK POSTS
+    const posts=[
+        {title:'Looking for drummer', desc:'Friday gig', type:'gig'},
+        {title:'Jazz pianist wanted', desc:'Weekly residency', type:'gig'},
+        {title:'Guitar lessons', desc:'Beginner friendly', type:'learn'}
+    ];
+
+    function loadCarousel(){
+        const c=document.getElementById('postCarousel');
+        c.innerHTML='';
+        posts.forEach(p=>{
+            const card=document.createElement('div');
+            card.className='post-card';
+            card.onclick=()=>location.href='post.html';
+            card.innerHTML=`<h3>${p.title}</h3><p>${p.desc}</p>`;
+            c.appendChild(card);
+        });
+    }
+    loadCarousel();
+
+    const modalBg=document.getElementById('modalBg');
+    document.getElementById('addPostBtn').onclick=()=>{ modalBg.style.display='flex'; };
+    modalBg.onclick=e=>{ if(e.target===modalBg) modalBg.style.display='none'; };
+
+    document.getElementById('savePostBtn').onclick=()=>{
+        const t=document.getElementById('postTitle').value;
+        const d=document.getElementById('postDesc').value;
+        const type=document.getElementById('postType').value;
+
+        posts.push({title:t, desc:d, type:type});
+        loadCarousel();
+        modalBg.style.display='none';
+    };
+
+    // tag select
+    document.querySelectorAll('#tagContainer .pill').forEach(p=>{
+        p.onclick=()=>p.classList.toggle('active');
+    });
+
+    // pfp upload WIP
+    const pfpUpload=document.getElementById('pfpUpload');
+    const pfpDisplay=document.getElementById('pfpDisplay');
+    if(pfpUpload) pfpUpload.onchange=e=>{
+        const file=e.target.files[0];
+        if(file){
+            pfpDisplay.style.background=`url(${URL.createObjectURL(file)}) center/cover`;
+        }
+    };
+
+    // gallery upload WIP
+    const galleryUpload=document.getElementById('galleryUpload');
+    const gallery=document.getElementById('gallery');
+    if(galleryUpload) galleryUpload.onchange=e=>{
+        const file=e.target.files[0];
+        if(file){
+            const div=document.createElement('div');
+            div.className='gallery-item';
+            div.style.background=`url(${URL.createObjectURL(file)}) center/cover`;
+            gallery.appendChild(div);
+        }
+    };
+</script>
+
+</body>
 </html>
