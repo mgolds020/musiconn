@@ -18,12 +18,16 @@ http.createServer((req, res) => {
     // res.writeHead(200, {'Content-Type': 'text/html'});
     const path = urlObj.parse(req.url).pathname;
 
-    if(path === "/" && req.method === 'GET') {
-        loadFile('views/homepage.html', res);
-    } else if (path === 'profile' && req.method === 'GET' ) {
-        loadFile('views/profile.html', res);
-    } else if (path === '/map' && req.method === 'GET' ) {
-        loadFile('views/map.html', res);
+    if (path === "/" && req.method === "GET") {
+        loadFile("views/homepage.html", res);
+    } else if (path === "/login" && req.method === "GET") {
+        loadFile("views/login.html", res);
+    } else if (path === "/signup" && req.method === "GET") {
+        loadFile("views/signup.html", res);
+    } else if (path === "/profile" && req.method === "GET") {
+        loadFile("views/profile.html", res);
+    } else if (path === "/map" && req.method === "GET") {
+        loadFile("views/map.html", res);
     } else if (path === '/deletePost' && req.method === 'POST' ) {
         let myFormData = '';
         req.on('data', newData => { myFormData += newData.toString(); });
@@ -31,8 +35,8 @@ http.createServer((req, res) => {
         req.on('end', () => {
             const parsedData = qs.parse(myFormData);
             const postId = parsedData.postId;
-            authenticateToken(res, req, (tokenInfo) => {
-                managaPostsCollection(res, (res, colleciton, client) => {
+            authenticateToken(req, res, (tokenInfo) => {
+                managaPostsCollection(res, (res, collection, client) => {
                     collection.findOne( { _id: postId }, (err, post) => {
 
                         if(err) {
@@ -106,19 +110,14 @@ function jsonResponse(res, status, data) {
  *  Helper function that authenticates the jwt token implimented
  */
 function authenticateToken(req, res, callback) {
-    const authHeader = req.headers['authorization'];
-    // if authHeader exists, grab the 'token' from 'BEARER {token}'
-    const token = authHeader && authHeader.split(' ')[1]; 
+  const authHeader = req.headers["authorization"];
+  const token = authHeader && authHeader.split(" ")[1];
+  if (!token) return jsonResponse(res, 401, { error: "No Token" });
 
-    if(token == null) return jsonResponse(res, 401, { error: 'No Token' });
-
-    // verify token
-    jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, accessPayload) => {
-        if(err) return jsonResponse(res, 403, { error: 'Invalid Token' });
-
-        req.user = accessPayload;
-        callback(accessPaylod);
-    });
+  jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, payload) => {
+    if (err) return jsonResponse(res, 403, { error: "Invalid Token" });
+    callback(payload);
+  });
 }
 
 

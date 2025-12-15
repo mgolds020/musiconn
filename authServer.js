@@ -15,8 +15,33 @@ const PORT = 8080;
 
 const MongoClient = mongo.MongoClient;
 
+// allow CORS requests from the client server
+function handleCORS(req, res) {
+  res.setHeader("Access-Control-Allow-Origin", "http://localhost:3000");
+  res.setHeader("Access-Control-Allow-Credentials", "true");
+  res.setHeader(
+    "Access-Control-Allow-Headers",
+    "Content-Type, Authorization"
+  );
+  res.setHeader(
+    "Access-Control-Allow-Methods",
+    "GET, POST, OPTIONS"
+  );
+
+  // Preflight request
+  if (req.method === "OPTIONS") {
+    res.writeHead(204);
+    res.end();
+    return true;
+  }
+  return false;
+}
+
 http.createServer((req, res) => {
     // res.writeHead(200, {'Content-Type': 'text/html'});
+
+    if (handleCORS(req, res)) return;
+
     const path = urlObj.parse(req.url).pathname;
 
     if (path === '/signup' && req.method === 'GET') {
@@ -70,7 +95,7 @@ http.createServer((req, res) => {
                         } else {
                             // redirect user to log in page
                             console.log("User successfully created, redirecting to login page");
-                            res.writeHead(303, {Location: '/login'});
+                            res.writeHead(303, { Location: "http://localhost:3000/login.html"});
                             res.end('');
                         }
 
@@ -140,7 +165,7 @@ http.createServer((req, res) => {
 
                     // create tokens
                     const accessToken = generateAccessToken(tokenPayload);
-                    const refreshToken = jwt.sign(tokenPayload, process.env.REFRESH_TOKEN_SECRET);
+                    const refreshToken = jwt.sign(tokenPayload, process.env.REFRESH_TOKEN_SECRET, { expiresIn: "7d" });
                     
                     // store the refresh token with this user in the database
                     collection.updateOne({ _id: dbUser._id }, { $set: { refreshToken: refreshToken} }, (err) => {
@@ -153,22 +178,20 @@ http.createServer((req, res) => {
                         } 
 
                         // send encrypted tokens to the front end
-                        jsonResponse(res, 200, {
-                            message: 'Login Success',
-                            accessToken: accessToken,
-                        });
-                        
                         setRefreshCookie(res, refreshToken);
 
-                        // redirect back to the main site with token in URL hash
-                        // this is required because the auth server is on a different port than the client server
-                        res.writeHead(303, {
-                            Location: `http://localhost:3000/#accessToken=${encodeURIComponent(accessToken)}`
+                        res.writeHead(200, {
+                            "Content-Type": "application/json",
+                            "Access-Control-Allow-Origin": "http://localhost:3000",
+                            "Access-Control-Allow-Credentials": "true",
                         });
-                        res.end("");
+                        res.end(JSON.stringify({
+                            message: "Login Success",
+                            accessToken: accessToken
+                        }));
+
                         client.close();
                         return;
-
                     });
 
                 });
@@ -195,7 +218,7 @@ http.createServer((req, res) => {
 
         manageUsersCollection(res, (res, collection, client) => {
                 // confirm token matches what we stored for this user
-            collection.findOne({ _id: payload.sub }, (err, dbUser) => {
+            collection.findOne({ _id: new mongo.ObjectId(payload.sub)}, (err, dbUser) => {
                 if (err || !dbUser) {
                     client.close();
                     return jsonResponse(res, 401, { error: "Unauthorized" });
@@ -218,6 +241,9 @@ http.createServer((req, res) => {
         });
        
 
+    }
+    else {
+        jsonResponse(res, 404, { error: "Not Found" });
     }
 
 }).listen(PORT);
@@ -258,9 +284,12 @@ function manageUsersCollection(res, callback) {
  * Helper function for sending json replacing express's res.json (with less input flexibility)
  */
 function jsonResponse(res, status, data) {
-    res.writeHead(status, { 'Content-type': 'application/json' });
-
-    res.end(JSON.stringify(data ?? {}));
+  res.writeHead(status, {
+    "Content-Type": "application/json",
+    "Access-Control-Allow-Origin": "http://localhost:3000",
+    "Access-Control-Allow-Credentials": "true",
+  });
+  res.end(JSON.stringify(data ?? {}));
 }
 
 function generateAccessToken(payload) {

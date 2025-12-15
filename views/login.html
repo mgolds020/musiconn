@@ -150,27 +150,28 @@
   <main>
     <div class="login-card">
       <h1>Log in</h1>
-
-      <div class="field">
-        <div class="input-wrapper">
-          <label>Username</label>
-          <input type="text" id="username" placeholder="Enter username" />
+      <form>
+        <div class="field">
+          <div class="input-wrapper">
+            <label for="username">Username</label>
+            <input type="text" id="username" placeholder="Enter username" />
+          </div>
         </div>
-      </div>
 
-      <div class="field">
-        <label>Password</label>
-        <div class="input-wrapper">
-          <input type="password" id="password" placeholder="Enter password" />
-          <i data-lucide="eye" class="toggle-password" id="togglePassword"></i>
+        <div class="field">
+          <label for="password">Password</label>
+          <div class="input-wrapper">
+            <input type="password" id="password" placeholder="Enter password" />
+            <i data-lucide="eye" class="toggle-password" id="togglePassword"></i>
+          </div>
         </div>
-      </div>
 
-      <div class="actions">
-        <a href="#">Forgot password?</a>
-      </div>
+        <div class="actions">
+          <a href="#">Forgot password?</a>
+        </div>
 
-      <button class="login-btn" id="loginBtn">Log in</button>
+        <button class="login-btn" id="loginBtn" type="submit">Log in</button>
+      </form>
 
       <div class="signup">
         Don’t have an account? <a href="#">Sign up</a>
@@ -192,12 +193,34 @@
     });
 
     // login
-    document.getElementById('loginBtn').addEventListener('click', () => {
-      localStorage.setItem('user', JSON.stringify({
-        username: document.getElementById('username').value || 'demoUser'
-      }));
+    document.getElementById("loginForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const username = document.getElementById("username").value.trim();
+      const password = document.getElementById("password").value;
 
-      window.location.href = 'gigs.html';
+      if (!username || !password) return; // don't submit empty login
+
+      try {
+        const res = await fetch("http://localhost:8080/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body: new URLSearchParams({ username, password }),
+          credentials: "include" // stores refresh cookie set by :8080
+        });
+
+        const data = await res.json();
+        if (!res.ok) return; // stop on failure
+
+        // store access token for this tab/session
+        sessionStorage.setItem("accessToken", data.accessToken);
+
+        // stores username for this tab/session
+        sessionStorage.setItem("username", username);
+
+        window.location.href = "gigs.html";
+      } catch (err) {
+        console.error(err);
+      }
     });
   </script>
 

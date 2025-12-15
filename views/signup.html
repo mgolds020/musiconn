@@ -1,21 +1,207 @@
 <!DOCTYPE html>
-<html>
-    <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    </head>
-    <body>
-        <form action="/signup" method="POST">
-            <div>
-                <label for="username">Username</label>
-                <input type="text" id="username" name="username" required>
-            </div>
-            <div>
-                <label for="password">Password</label>
-                <input type="password" id="password" name="password" required>
-            </div>
-            <button type="submit">Sign up</button>
-        </form>
-        <div>Already have an account? <a href='/login'>Log in</a></div>
-    </body>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sign up • Musiconn</title>
+
+  <!-- google fonts and icon library -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <style>
+    :root {
+      --red: #e63946;
+      --black: #111;
+      --gray: #666;
+      --light-gray: #f4f4f4;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Inter', sans-serif;
+    }
+
+    body {
+      height: 100vh;
+      background: #fff;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      height: 60px;
+      border-bottom: 1px solid #eee;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 40px;
+      font-weight: 600;
+      font-size: 18px;
+    }
+
+    main {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .login-card {
+      width: 380px;
+      border: 1px solid #eee;
+      border-radius: 12px;
+      padding: 32px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.05);
+    }
+
+    .login-card h1 {
+      font-size: 22px;
+      margin-bottom: 24px;
+      text-align: center;
+    }
+
+    .field {
+      margin-bottom: 16px;
+    }
+
+    .field label {
+      display: block;
+      font-size: 14px;
+      margin-bottom: 6px;
+      color: var(--gray);
+    }
+
+    .input-wrapper {
+      position: relative;
+    }
+
+    .input-wrapper input {
+      width: 100%;
+      padding: 10px 40px 10px 12px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      font-size: 14px;
+    }
+
+    .toggle-password {
+      position: absolute;
+      right: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      cursor: pointer;
+      color: var(--gray);
+      transition: transform 0.15s ease, color 0.15s ease;
+    }
+
+    .toggle-password:hover {
+      color: var(--black);
+      transform: translateY(-50%) scale(1.1);
+    }
+
+    .login-btn {
+      width: 100%;
+      background: var(--red);
+      color: white;
+      border: none;
+      padding: 12px;
+      border-radius: 8px;
+      font-size: 15px;
+      cursor: pointer;
+    }
+
+    .signup {
+      margin-top: 16px;
+      text-align: center;
+      font-size: 14px;
+    }
+
+    .signup a {
+      color: var(--red);
+      text-decoration: none;
+      font-weight: 500;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    Musiconn
+  </header>
+
+  <main>
+    <div class="login-card">
+      <h1>Sign up</h1>
+
+      <form id="signupForm">
+        <div class="field">
+          <div class="input-wrapper">
+            <label for="username">Username</label>
+            <input type="text" id="username" placeholder="Choose a username" required />
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="password">Password</label>
+          <div class="input-wrapper">
+            <input type="password" id="password" placeholder="Create a password" required />
+            <i data-lucide="eye" class="toggle-password" id="togglePassword"></i>
+          </div>
+        </div>
+
+        <button class="login-btn" type="submit">Sign up</button>
+      </form>
+
+      <div class="signup">
+        Already have an account? <a href="/login">Log in</a>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    lucide.createIcons();
+
+    const toggle = document.getElementById("togglePassword");
+    const password = document.getElementById("password");
+
+    toggle.addEventListener("click", () => {
+      const isHidden = password.type === "password";
+      password.type = isHidden ? "text" : "password";
+      toggle.setAttribute("data-lucide", isHidden ? "eye-off" : "eye");
+      lucide.createIcons();
+    });
+
+    // signup
+    document.getElementById("signupForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const username = document.getElementById("username").value.trim();
+      const password = document.getElementById("password").value;
+
+      if (!username || !password) return;
+
+      try {
+        const res = await fetch("http://localhost:8080/signup", {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body: new URLSearchParams({ username, password }),
+          credentials: "include"
+        });
+
+        if (!res.ok && res.status !== 303) return;
+
+        // after successful signup, send user to login page
+        window.location.href = "/login";
+      } catch (err) {
+        console.error(err);
+      }
+    });
+  </script>
+
+</body>
 </html>
