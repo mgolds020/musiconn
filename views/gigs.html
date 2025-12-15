@@ -173,7 +173,7 @@
 
   <div class="container">
     <nav class="menu" id="sideMenu">
-      <a href="#">Map</a>
+      <a href="/map.html">Map</a>
       <a href="#" class="active" onclick="setView('gig')">Gigs</a>
       <a href="#" onclick="setView('learn')">Learn</a>
       <a href="#" onclick="setView('jam')">Jam</a>
@@ -199,6 +199,13 @@
     ];
 
     let currentView = 'gig';
+
+    function getViewFromUrl() {
+      const params = new URLSearchParams(window.location.search);
+      const v = params.get("view");
+      return (v === "gig" || v === "learn" || v === "jam") ? v : null;
+    }
+
 
     function renderFeed() {
       feed.innerHTML = '';
@@ -230,6 +237,9 @@
       sideMenu.style.display = sideMenu.style.display === 'block' ? 'none' : 'block';
     });
 
+    const initial = getViewFromUrl();
+    if (initial) currentView = initial;
+    pageTitle.textContent = currentView.charAt(0).toUpperCase() + currentView.slice(1);
     renderFeed();
   </script>
 

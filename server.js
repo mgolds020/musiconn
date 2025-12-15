@@ -18,14 +18,42 @@ http.createServer((req, res) => {
     // res.writeHead(200, {'Content-Type': 'text/html'});
     const path = urlObj.parse(req.url).pathname;
 
+    // Serve files for assets requested by pages (css/js/images)
+    // Example: browser requests /styles/map.css -> serve ./styles/map.css
+    if (path && (path.startsWith('/styles/') || path.startsWith('/scripts/') || path.startsWith('/images/') || path.match(/\.(css|js|png|jpg|jpeg|svg)$/))) {
+        const staticPath = path.slice(1); // remove leading '/'
+        fs.readFile(staticPath, (err, data) => {
+            if (err) {
+                res.writeHead(404, { 'Content-Type': 'text/plain' });
+                res.end('Not found');
+                return;
+            }
+
+            let contentType = 'application/octet-stream';
+            if (staticPath.endsWith('.css')) contentType = 'text/css';
+            else if (staticPath.endsWith('.js')) contentType = 'application/javascript';
+            else if (staticPath.endsWith('.png')) contentType = 'image/png';
+            else if (staticPath.endsWith('.jpg') || staticPath.endsWith('.jpeg')) contentType = 'image/jpeg';
+            else if (staticPath.endsWith('.svg')) contentType = 'image/svg+xml';
+
+            res.writeHead(200, { 'Content-Type': contentType });
+            res.end(data);
+        });
+        return;
+    }
+
     if (path === "/" && req.method === "GET") {
         loadFile("views/map.html", res);
+
     } else if (path === "/login" && req.method === "GET") {
         loadFile("views/login.html", res);
+
     } else if (path === "/signup" && req.method === "GET") {
         loadFile("views/signup.html", res);
+
     } else if (path === "/gigs" && req.method === "GET") {
         loadFile("views/gigs.html", res);
+
     } else if (path === "/users" && req.method === "GET") {
 
         authenticateToken(req, res, (tokenPayload) => {
@@ -49,7 +77,6 @@ http.createServer((req, res) => {
                     }
 
                     jsonResponse(res, 200, user);
-                    res.write(user);
                     client.close();
                 });
             });
@@ -58,8 +85,7 @@ http.createServer((req, res) => {
         // loadFile("views/profile.html", res);
     } else if (path === "/map" && req.method === "GET") {
         loadFile("views/map.html", res);
-
-    } else if (path === "/map" && req.method === "POST") {
+    } else if (path === "/posts" && req.method === "POST") {
         let myFormData = '';
         req.on('data', newData => { myFormData += newData.toString(); });
         // end = event when data stops being sent
@@ -108,7 +134,7 @@ http.createServer((req, res) => {
                         client.close();
                         return jsonResponse(res, 500, {error: "Database Query Error"});
                     }
-                    
+
                     console.log("Geo query returned", events.length, "documents");
                     console.log(events.map(e => ({
                         title: e.title,
@@ -122,7 +148,7 @@ http.createServer((req, res) => {
       
         });
 
-    } else if (path === '/deletePost' && req.method === 'POST' ) {
+    } else if (path === '/posts/delete' && req.method === 'POST' ) {
         let myFormData = '';
         req.on('data', newData => { myFormData += newData.toString(); });
         // end = event when data stops being sent
@@ -131,7 +157,7 @@ http.createServer((req, res) => {
             const postId = parsedData.postId;
             authenticateToken(req, res, (tokenInfo) => {
                 manageCollection(res, 'posts', (res, collection, client) => {
-                    collection.findOne( { _id: new mongo.objectId(postId) }, (err, post) => {
+                    collection.findOne( { _id: new mongo.ObjectId(postId) }, (err, post) => {
 
                         if(err) {
                             console.log(`Error qeurying: ${err}`);
@@ -170,6 +196,38 @@ http.createServer((req, res) => {
                 });
             });
         });
+    } else if (path === '/posts/create' && req.method === 'POST') {
+        let myFormData = '';
+        req.on('data', newData => { myFormData += newData.toString(); });
+        // end = event when data stops being sent
+        req.on('end', () => {
+            const postData = qs.parse(myFormData).post;
+
+            const post = createPostObject(postData);
+            if (!post) return jsonResponse(res, 400, { error: 'Unable to create post'});
+
+            authenticateToken(req, res, (tokenInfo) => {
+                manageCollection(res, 'posts', (res, collection, client) => {
+
+                    const userId = tokenInfo.sub;
+                    post.authorId = new mongo.ObjectId(userId);
+
+                    collection.insertOne(post, (err) => {
+
+                        if(err) {
+                            console.log(`Insertion error: ${err}`);
+                            client.close();
+                            return jsonResponse(res, 500, { error: 'Error Creating User'})
+                        }
+
+                        console.log("Post successfully created");
+                        client.close();
+                        return jsonResponse(res, 201, { message: "Post created" });
+                        
+                    });
+                });
+            });
+        });
     } else {
         res.writeHead(303, {Location: '/'});
         res.end('');
@@ -177,4 +235,69 @@ http.createServer((req, res) => {
 
 }).listen(PORT);
 
+
+// function to validate and return a post object in the correct format
+
+function createPostObject(post) {
+
+    // data validation
+
+    // required fields
+    const type = String(post?.type ?? '').trim();
+    const title = String(post?.title ?? '').trim();
+    const description = String(post?.description ?? '').trim();
+    const latitude = Number(post?.latitude);
+    const longitude = Number(post?.longitude);
+
+
+    const allowedTypes = new Set(['gig', 'event', 'lesson']);
+
+    if (!allowedTypes.has(type)) {
+        jsonResponse(res, 400, { error: 'Invalid type', allowed: Array.from(allowedTypes) });
+        return;
+    }
+    if (!title){
+        jsonResponse(res, 400, { error: 'Missing title' });
+        return;
+    };
+    if (!description){ 
+        jsonResponse(res, 400, { error: 'Missing description' });
+        return;
+    };
+    if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+        jsonResponse(res, 400, { error: 'Invalid latitude/longitude' });
+        return;
+    }
+
+    // Optional fields - set null if they were not posted
+    const address = post?.address ? String(post.address).trim() : '';
+    const priceLowBound = post?.priceLowBound != null ? Number(post.priceLowBound) : null;
+    const priceHighBound = post?.priceHighBound != null ? Number(post.priceHighBound) : null;
+
+    // optionally accept and validate event date
+    const eventDate = post?.eventDate ? new Date(post.eventDate) : null;
+
+    if (post?.eventDate && isNaN(eventDate.getTime())) {
+        jsonResponse(res, 400, { error: 'Invalid eventDate' });
+        return;
+    }
+
+    const newPost = {
+        type: type,
+        title: title,
+        description: description,
+        datePosted: new Date(),
+        address: address,
+        priceLowBound: priceLowBound,
+        priceHighBound: priceHighBound,
+        location: {
+            type: 'Point',
+            coordinates: [longitude, latitude]
+        }
+    };
+
+    if (eventDate) newPost.eventDate = eventDate;
+
+    return newPost;
+}
 
