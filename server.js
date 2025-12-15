@@ -59,7 +59,6 @@ http.createServer((req, res) => {
                             client.close();
                             return;
                         }
-
                         
                         collection.deleteOne( { _id: postId }, (err, result) => {
                             if(err) {
