@@ -1,0 +1,194 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Map</title>
+
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    />
+
+    <style>
+      #map {
+        width: calc(100% - 280px);
+        height: 100vh;
+        margin-left: 280px;
+      }
+      #sidebar {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 280px;
+        height: 100vh;
+        overflow: auto;
+        background: white;
+        z-index: 1000;
+        border-right: 1px solid #e5e5e5;
+      }
+
+      .sidebar-item {
+        display: block;
+        width: 100%;
+        padding: 12px;
+        text-align: left;
+        border: 0;
+        background: transparent;
+        cursor: pointer;
+        border-bottom: 1px solid #f0f0f0;
+      }
+
+      .sidebar-item:hover {
+        background: #f7f7f7;
+      }
+
+      .sidebar-title {
+        font-weight: 600;
+      }
+
+      .sidebar-meta {
+        font-size: 12px;
+        margin-top: 4px;
+      }
+
+      #sidebar button {
+        display: block;
+        width: 100%;
+        padding: 10px;
+        text-align: left;
+        border: 0;
+        background: transparent;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div id="sidebar"></div>
+    <div id="map"></div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <script>
+      const LOCATIONS = [
+        {
+          type: "event",
+          title: "House show in Somerville",
+          description: "Three bands, all ages, doors at 7pm.",
+          location: "Somerville, MA",
+          address: "Somerville, MA, USA",
+          datePosted: "2025-12-09T19:59:16.313+00:00",
+          eventDate: "2025-12-20T01:00:00.000+00:00",
+          priceLowBound: 10,
+          priceHighBound: 20,
+        },
+        {
+          type: "event",
+          title: "Indie night at Brighton Music Hall",
+          description: "Three local bands, all ages, doors at 7pm",
+          location: "158 Brighton Ave, Allston, MA 02134",
+          address: "158 Brighton Ave, Allston, MA 02134",
+          datePosted: "2025-12-09T19:59:16.313+00:00",
+          eventDate: "2025-12-20T01:00:00.000+00:00",
+          priceLowBound: 15,
+          priceHighBound: 20,
+        },
+      ];
+
+      const map = L.map("map");
+
+      L.tileLayer(
+        "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
+        { attribution: "© OpenStreetMap contributors © CARTO" }
+      ).addTo(map);
+
+      const sidebar = document.getElementById("sidebar");
+      const bounds = [];
+      const markersByName = new Map();
+
+      async function geocode(address) {
+        const url =
+          "https://nominatim.openstreetmap.org/search?format=json&q=" +
+          encodeURIComponent(address);
+
+        const res = await fetch(url, {
+          headers: { Accept: "application/json" },
+        });
+
+        const data = await res.json();
+        if (!data || data.length === 0) return null;
+
+        return {
+          lat: parseFloat(data[0].lat),
+          lng: parseFloat(data[0].lon),
+        };
+      }
+
+      async function init() {
+        for (const loc of LOCATIONS) {
+      const coords = await geocode(loc.address);
+      if (!coords) continue;
+
+      const latlng = [coords.lat, coords.lng];
+      bounds.push(latlng);
+
+      const marker = L.circleMarker(latlng, {
+        radius: 8,
+        weight: 2,
+      }).addTo(map);
+
+      const priceText =
+        loc.priceLowBound === 0 && loc.priceHighBound === 0
+          ? "Free"
+          : loc.priceLowBound === loc.priceHighBound
+          ? `$${loc.priceLowBound}`
+          : `$${loc.priceLowBound}–$${loc.priceHighBound}`;
+
+      marker.bindPopup(`
+        <div>
+          <strong>${loc.title}</strong>
+          <div>${loc.location}</div>
+
+          <div style="margin-top: 6px;">
+            ${loc.description}
+          </div>
+
+          <div style="margin-top: 6px;">
+            <div>Event date: ${new Date(loc.eventDate).toLocaleString()}</div>
+            <div>Posted: ${new Date(loc.datePosted).toLocaleDateString()}</div>
+          </div>
+
+          <div style="margin-top: 6px;">
+            Price: ${priceText}
+          </div>
+        </div>
+      `);
+              markersByName.set(loc.title, marker);
+
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "sidebar-item";
+    btn.innerHTML = `
+      <div class="sidebar-title">${loc.title}</div>
+      <div class="sidebar-meta">${loc.type} • ${loc.location}</div>
+    `;
+
+    btn.addEventListener("click", () => {
+      map.setView(latlng, 14);
+      marker.openPopup();
+    });
+
+    sidebar.appendChild(btn);
+        }
+
+        if (bounds.length === 1) {
+          map.setView(bounds[0], 14);
+        } else if (bounds.length > 1) {
+          map.fitBounds(bounds);
+        }
+      }
+
+      init();
+    </script>
+  </body>
+</html>
