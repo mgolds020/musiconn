@@ -156,10 +156,18 @@ http.createServer((req, res) => {
                         jsonResponse(res, 200, {
                             message: 'Login Success',
                             accessToken: accessToken,
-                            refreshToken: refreshToken
                         });
+                        
+                        setRefreshCookie(res, refreshToken);
 
+                        // redirect back to the main site with token in URL hash
+                        // this is required because the auth server is on a different port than the client server
+                        res.writeHead(303, {
+                            Location: `http://localhost:3000/#accessToken=${encodeURIComponent(accessToken)}`
+                        });
+                        res.end("");
                         client.close();
+                        return;
 
                     });
 
@@ -168,19 +176,47 @@ http.createServer((req, res) => {
         });
 
     } else if (path === "/token" && req.method == 'POST') {
-        let myFormData = '';
-        req.on('data', newData => { myFormData += newData.toString(); });
-        req.on('end', () => {
-            const parsedData = qs.parse(myFormData);
-            const refreshToken = parsedData.token;
 
-            // TO DO: Should Ilog out? 
-            if(refreshToken == null) return jsonResponse(res, 401, { error: 'Unauthorized: invalid refresh token' });
+        // read refresh token from cookie (preferred)
+        const cookies = parseCookies(req);
+        const refreshToken = cookies.refreshToken;
 
-            
+        if (!refreshToken) {
+            return jsonResponse(res, 401, { error: "Unauthorized: missing refresh token" });
+            // TO DO: Should I log out? 
+        }
 
+        let payload;
+        try {
+            payload = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET);
+        } catch (e) {
+            return jsonResponse(res, 403, { error: "Forbidden: invalid refresh token" });
+        }
 
-        })
+        manageUsersCollection(res, (res, collection, client) => {
+                // confirm token matches what we stored for this user
+            collection.findOne({ _id: payload.sub }, (err, dbUser) => {
+                if (err || !dbUser) {
+                    client.close();
+                    return jsonResponse(res, 401, { error: "Unauthorized" });
+                }
+
+                if (dbUser.refreshToken !== refreshToken) {
+                    client.close();
+                    return jsonResponse(res, 403, { error: "Forbidden: token mismatch" });
+                }
+
+                // issue a new access token
+                const newAccessToken = generateAccessToken({
+                    sub: dbUser._id.toString(),
+                    username: dbUser.username
+                });
+
+                client.close();
+                return jsonResponse(res, 200, { accessToken: newAccessToken });
+            });
+        });
+       
 
     }
 
@@ -229,4 +265,35 @@ function jsonResponse(res, status, data) {
 
 function generateAccessToken(payload) {
     return jwt.sign(payload, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '15m'});
+}
+
+function parseCookies(req) {
+  const header = req.headers.cookie;
+  if (!header) return {};
+  const out = {};
+  header.split(";").forEach(part => {
+    const [k, ...v] = part.trim().split("=");
+    out[k] = decodeURIComponent(v.join("="));
+  });
+  return out;
+}
+
+function setRefreshCookie(res, refreshToken) {
+  // For local dev over http, omit Secure. In production over https, add Secure.
+  const cookie = [
+    `refreshToken=${encodeURIComponent(refreshToken)}`,
+    "HttpOnly",
+    "SameSite=Lax",
+    "Path=/",
+    // "Secure", // enable when serving over https
+    // "Max-Age=604800" // optional: 7 days
+  ].join("; ");
+  res.setHeader("Set-Cookie", cookie);
+}
+
+function clearRefreshCookie(res) {
+  res.setHeader(
+    "Set-Cookie",
+    "refreshToken=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0"
+  );
 }
