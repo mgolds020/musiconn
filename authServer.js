@@ -10,10 +10,10 @@ const mongo = require('mongodb');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 
+const { loadFile, jsonResponse, manageCollection } = require('./utilities');
+
 // connecting and serving information
 const PORT = 8080;
-
-const MongoClient = mongo.MongoClient;
 
 // allow CORS requests from the client server
 function handleCORS(req, res) {
@@ -69,7 +69,7 @@ http.createServer((req, res) => {
 
             const hashedPass = bcrypt.hashSync(passwordEntered, 10);
             
-            manageUsersCollection(res, (res, collection, client) => {
+            manageCollection(res, 'users', (res, collection, client) => {
                 
                 collection.findOne({username: usernameEntered}, (err, user) => {
 
@@ -128,7 +128,7 @@ http.createServer((req, res) => {
                 return jsonResponse(res, 400, { error: 'Bad Input' });
             }
 
-            manageUsersCollection(res, (res, collection, client) => {
+            manageCollection(res, 'users', (res, collection, client) => {
                 // find the user in our database
                 collection.findOne({username: usernameEntered}, (err, dbUser) => {
 
@@ -217,7 +217,7 @@ http.createServer((req, res) => {
             return jsonResponse(res, 403, { error: "Forbidden: invalid refresh token" });
         }
 
-        manageUsersCollection(res, (res, collection, client) => {
+        manageCollection(res, 'users', (res, collection, client) => {
                 // confirm token matches what we stored for this user
             collection.findOne({ _id: new mongo.ObjectId(payload.sub)}, (err, dbUser) => {
                 if (err || !dbUser) {
@@ -248,50 +248,6 @@ http.createServer((req, res) => {
     }
 
 }).listen(PORT);
-
-/** loadFile
- *  Helper funtion to load/render a file stored at pathname using the fs module
- */
-function loadFile(pathname, res) {
-    fs.readFile(pathname, (err, fileContents) => {
-        if(err) {
-            console.log(`ERROR: Cannot read ${pathname}`);
-            return jsonResponse(res, 500, { error: 'Cannot Load File or Resource' });
-        }
-        res.write(fileContents);
-        res.end("");
-    });
-}
-
-function manageUsersCollection(res, callback) {
-
-        MongoClient.connect(process.env.CONNECTION_STRING, (err, client) => {
-        // error handling
-        if(err) {
-            console.log(`Connection Error: ${err}`);   
-            return jsonResponse(res, 500, { error: 'Database Connection Error' });
-        }
-
-        // select user collection from our final project database
-        const dbo = client.db('FinalProject');
-        const collection = dbo.collection('users');
-
-        // call the callback function
-        callback(res, collection, client);
-    });
-}
-
-/**
- * Helper function for sending json replacing express's res.json (with less input flexibility)
- */
-function jsonResponse(res, status, data) {
-  res.writeHead(status, {
-    "Content-Type": "application/json",
-    "Access-Control-Allow-Origin": "http://localhost:3000",
-    "Access-Control-Allow-Credentials": "true",
-  });
-  res.end(JSON.stringify(data ?? {}));
-}
 
 function generateAccessToken(payload) {
     return jwt.sign(payload, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '15m'});

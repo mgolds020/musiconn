@@ -51,50 +51,70 @@
         margin-top: 4px;
       }
 
-      #sidebar button {
-        display: block;
-        width: 100%;
-        padding: 10px;
-        text-align: left;
-        border: 0;
-        background: transparent;
+      #map-search-overlay {
+        position: absolute;
+        left: 50%;
+        bottom: 24px;
+        transform: translateX(-50%);
+        z-index: 1100;
+      }
+
+      #map-search-btn {
+        padding: 12px 18px;
+        border-radius: 999px;
+        border: 1px solid #ccc;
+        background: #f4f4f4;
+        font-size: 14px;
+        cursor: not-allowed;
+      }
+
+      #map-search-btn.enabled {
+        background: white;
         cursor: pointer;
       }
+
+      #locate-btn {
+        position: absolute;
+        right: 20px;
+        bottom: 24px;
+        z-index: 1100;
+        width: 42px;
+        height: 42px;
+        border-radius: 50%;
+        border: 1px solid #ccc;
+        background: white;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      #locate-btn:hover {
+        background: #f7f7f7;
+      }
+
+
     </style>
   </head>
 
   <body>
     <div id="sidebar"></div>
+
+    <div id="map-search-overlay">
+      <button id="map-search-btn" disabled>
+        Search this location
+      </button>
+    </div>
+
+    <div id="locate-btn" title="Go to my location">
+      📍
+    </div>
+
     <div id="map"></div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
     <script>
-      const LOCATIONS = [
-        {
-          type: "event",
-          title: "House show in Somerville",
-          description: "Three bands, all ages, doors at 7pm.",
-          location: "Somerville, MA",
-          address: "Somerville, MA, USA",
-          datePosted: "2025-12-09T19:59:16.313+00:00",
-          eventDate: "2025-12-20T01:00:00.000+00:00",
-          priceLowBound: 10,
-          priceHighBound: 20,
-        },
-        {
-          type: "event",
-          title: "Indie night at Brighton Music Hall",
-          description: "Three local bands, all ages, doors at 7pm",
-          location: "158 Brighton Ave, Allston, MA 02134",
-          address: "158 Brighton Ave, Allston, MA 02134",
-          datePosted: "2025-12-09T19:59:16.313+00:00",
-          eventDate: "2025-12-20T01:00:00.000+00:00",
-          priceLowBound: 15,
-          priceHighBound: 20,
-        },
-      ];
-
       const map = L.map("map");
 
       L.tileLayer(
@@ -103,92 +123,176 @@
       ).addTo(map);
 
       const sidebar = document.getElementById("sidebar");
-      const bounds = [];
-      const markersByName = new Map();
 
-      async function geocode(address) {
-        const url =
-          "https://nominatim.openstreetmap.org/search?format=json&q=" +
-          encodeURIComponent(address);
+      const searchBtn = document.getElementById("map-search-btn");
+      const MAX_RADIUS_MILES = 40;
 
-        const res = await fetch(url, {
-          headers: { Accept: "application/json" },
-        });
+      const locateBtn = document.getElementById("locate-btn");
 
-        const data = await res.json();
-        if (!data || data.length === 0) return null;
+      // Keep track of what we've drawn so we can clear it
+      let activeMarkers = [];
+      let activeBounds = [];
 
-        return {
-          lat: parseFloat(data[0].lat),
-          lng: parseFloat(data[0].lon),
-        };
+      function clearResults() {
+        // remove markers from map
+        activeMarkers.forEach(m => map.removeLayer(m));
+        activeMarkers = [];
+        activeBounds = [];
+
+        // clear sidebar (keep it simple: wipe everything)
+        sidebar.innerHTML = "";
       }
 
-      async function init() {
-        for (const loc of LOCATIONS) {
-      const coords = await geocode(loc.address);
-      if (!coords) continue;
+      function formatPrice(post) {
+        const low = Number(post.priceLowBound ?? 0);
+        const high = Number(post.priceHighBound ?? 0);
 
-      const latlng = [coords.lat, coords.lng];
-      bounds.push(latlng);
-
-      const marker = L.circleMarker(latlng, {
-        radius: 8,
-        weight: 2,
-      }).addTo(map);
-
-      const priceText =
-        loc.priceLowBound === 0 && loc.priceHighBound === 0
-          ? "Free"
-          : loc.priceLowBound === loc.priceHighBound
-          ? `$${loc.priceLowBound}`
-          : `$${loc.priceLowBound}–$${loc.priceHighBound}`;
-
-      marker.bindPopup(`
-        <div>
-          <strong>${loc.title}</strong>
-          <div>${loc.location}</div>
-
-          <div style="margin-top: 6px;">
-            ${loc.description}
-          </div>
-
-          <div style="margin-top: 6px;">
-            <div>Event date: ${new Date(loc.eventDate).toLocaleString()}</div>
-            <div>Posted: ${new Date(loc.datePosted).toLocaleDateString()}</div>
-          </div>
-
-          <div style="margin-top: 6px;">
-            Price: ${priceText}
-          </div>
-        </div>
-      `);
-              markersByName.set(loc.title, marker);
-
-    const btn = document.createElement("button");
-    btn.type = "button";
-    btn.className = "sidebar-item";
-    btn.innerHTML = `
-      <div class="sidebar-title">${loc.title}</div>
-      <div class="sidebar-meta">${loc.type} • ${loc.location}</div>
-    `;
-
-    btn.addEventListener("click", () => {
-      map.setView(latlng, 14);
-      marker.openPopup();
-    });
-
-    sidebar.appendChild(btn);
-        }
-
-        if (bounds.length === 1) {
-          map.setView(bounds[0], 14);
-        } else if (bounds.length > 1) {
-          map.fitBounds(bounds);
-        }
+        if (low === 0 && high === 0) return "Free";
+        if (low === high) return `$${low}`;
+        return `$${low}–$${high}`;
       }
 
-      init();
+      function renderPosts(posts) {
+        clearResults();
+
+        for (const post of posts) {
+          const coords = post?.location?.coordinates;
+          if (!coords || coords.length !== 2) continue;
+
+          const [lng, lat] = coords;
+          if (!Number.isFinite(lng) || !Number.isFinite(lat)) continue;
+
+          const latlng = [lat, lng];
+          activeBounds.push(latlng);
+
+          const marker = L.circleMarker(latlng, {
+            radius: 8,
+            weight: 2,
+          }).addTo(map);
+
+          activeMarkers.push(marker);
+
+          const priceText = formatPrice(post);
+
+          const title = post.title ?? "(untitled)";
+          const type = post.type ?? "";
+          const address = post.address ?? "";
+          const description = post.description ?? "";
+
+          const eventDate = post.eventDate ? new Date(post.eventDate).toLocaleString() : "";
+          const datePosted = post.datePosted ? new Date(post.datePosted).toLocaleDateString() : "";
+
+          marker.bindPopup(`
+            <div>
+              <strong>${title}</strong>
+              <div>${address}</div>
+
+              <div style="margin-top: 6px;">
+                ${description}
+              </div>
+
+              <div style="margin-top: 6px;">
+                ${eventDate ? `<div>Event date: ${eventDate}</div>` : ""}
+                ${datePosted ? `<div>Posted: ${datePosted}</div>` : ""}
+              </div>
+
+              <div style="margin-top: 6px;">
+                Price: ${priceText}
+              </div>
+            </div>
+          `);
+
+          const btn = document.createElement("button");
+          btn.type = "button";
+          btn.className = "sidebar-item";
+          btn.innerHTML = `
+            <div class="sidebar-title">${title}</div>
+            <div class="sidebar-meta">${type}${address ? ` • ${address}` : ""}</div>
+          `;
+
+          btn.addEventListener("click", () => {
+            map.setView(latlng, 14);
+            marker.openPopup();
+          });
+
+          sidebar.appendChild(btn);
+        }
+
+        if (activeBounds.length === 1) {
+          map.setView(activeBounds[0], 14);
+        } else if (activeBounds.length > 1) {
+          map.fitBounds(activeBounds);
+        }
+
+        updateSearchButtonState();
+      }
+
+      locateBtn.addEventListener("click", () => {
+        if (!navigator.geolocation) {
+          alert("Geolocation is not supported by your browser.");
+          return;
+        }
+
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            const { latitude, longitude } = pos.coords;
+            map.setView([latitude, longitude], 13);
+          },
+          () => alert("Unable to retrieve your location."),
+          { enableHighAccuracy: true, timeout: 10000 }
+        );
+      });
+
+      function currentRadiusMiles() {
+        const b = map.getBounds();
+        const c = map.getCenter();
+        const northPoint = L.latLng(b.getNorth(), c.lng);
+        const meters = map.distance(c, northPoint);
+        return meters / 1609.344;
+      }
+
+      function updateSearchButtonState() {
+        if (!map._loaded) return;
+        const enabled = currentRadiusMiles() <= MAX_RADIUS_MILES;
+        searchBtn.disabled = !enabled;
+        searchBtn.classList.toggle("enabled", enabled);
+      }
+
+      searchBtn.addEventListener("click", async () => {
+        if (searchBtn.disabled) return;
+
+        const center = map.getCenter();
+
+        try {
+          const res = await fetch("/map", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              location: { type: "Point", coordinates: [center.lng, center.lat] },
+              distanceMiles: 40
+            })
+          });
+
+          const data = await res.json();
+          if (!res.ok) {
+            console.error("Search failed:", data);
+            return;
+          }
+
+          // Expecting an array of posts
+          renderPosts(Array.isArray(data) ? data : []);
+        } catch (err) {
+          console.error(err);
+        }
+      });
+
+      map.on("moveend", updateSearchButtonState);
+      map.on("zoomend", updateSearchButtonState);
+
+      // Initial view (so map isn't blank)
+      map.setView([42.3601, -71.0589], 11); // Boston-ish
+      updateSearchButtonState();
     </script>
+
   </body>
 </html>
