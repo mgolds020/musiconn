@@ -1,0 +1,6 @@
+POST /posts/create HTTP/1.1
+Host: localhost:3000
+Content-Type: application/x-www-form-urlencoded
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2OTQxYzRjZTgwYjgwZWRhOTA4YzVlOGUiLCJ1c2VybmFtZSI6InJvcnk0IiwiaWF0IjoxNzY1OTE3OTA3LCJleHAiOjE3NjU5MTg4MDd9._ZQZPBRGh-GdS4EwW9PfjYVVSIdxRxCnrGy9-vyLrhI
+
+post={"type":"lesson","title":"Lesson","description":"Yay","address":"93 Winthrop St., Medford MA 02155","datePosted":"2025-12-16T21:00:59.211Z","priceLowBound":10,"priceHighBound":20,"location":{"type":"Point","coordinates":[-71.1205474,42.4130509]}}

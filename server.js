@@ -61,6 +61,10 @@ http.createServer((req, res) => {
     } else if (path === "/profile" && req.method === "GET") {
 
         loadFile("views/profile.html", res);
+    
+    } else if (path === "/editprofile" && req.method === "GET") {
+
+        loadFile("views/edit-profile.html", res);
 
     } else if (path === "/users" && req.method === "GET") {
         //authenticateToken(req, res, () => {
@@ -70,7 +74,7 @@ http.createServer((req, res) => {
             if (!username) return jsonResponse(res, 400, { error: "Missing username" });
 
             manageCollection(res, "users", (res, collection, client) => {
-                collection.findOne({ username: username }, { passsword: 0 }, (err, user) => {
+                collection.findOne({ username: username }, (err, user) => {
                     if (err) {
                     console.log(`Error querying: ${err}`);
                     client.close();
@@ -91,9 +95,102 @@ http.createServer((req, res) => {
 
 
         // loadFile("views/profile.html", res);
+    } else if (path === "/users" && req.method === 'PUT') {
+        authenticateToken(req, res, (tokenInfo) => {
+            let myFormData = '';
+            req.on('data', newData => { myFormData += newData.toString(); });
+            req.on('end', () => {
+                let body = {};
+
+                try {
+                    body = myFormData ? JSON.parse(myFormData) : {};
+                } catch {
+                    return jsonResponse(res, 400, { error: "Invalid JSON" });
+                }
+
+                
+                const username = body.username;
+                if(username !== tokenInfo.username) return jsonResponse(res, 400, { error: "Bad Request: Cannot Edit Another User's Profile "});
+
+                const userId = new mongo.ObjectId(tokenInfo.sub);
+
+                manageCollection(res, 'users', (res, collection, client) => {
+                    collection.findOne({ _id: userId }, (err, dbUser) => {
+                        if (err) {
+                            console.log("Error querying user: " + err);
+                            client.close();
+                            return jsonResponse(res, 500, { error: "Error Querying User"});
+                        }
+
+                        if (!dbUser) {
+                            console.log("Error querying user: " + err);
+                            client.close();
+                            return jsonResponse(res, 404, { error: `No such user: ${username}`});
+                        }
+
+                        const query = createUserUpdateQuery(res, body, dbUser);
+                        if (query == null) {
+                            console.log(`Error Updating ${username}'s profile`);
+                            client.close();
+                            return jsonResponse(res, 400, { error: `No valid fields to update`});
+                        }
+
+                        collection.updateOne({ _id: userId }, query.update, (err) => {
+                            if(err) {
+                                console.log("Error updating user");
+                                client.close();
+                                return jsonResponse(res, 500, { error: "Server Error Updating user" });
+                            }
+                            
+                            client.close();
+
+                            return jsonResponse(res, 204, { status: "sucess" });
+
+                        });
+
+                    });
+                });
+            });
+        });
+
     } else if (path === "/map" && req.method === "GET") {
         loadFile("views/map.html", res);
-    } else if (path === "/posts" && req.method === "POST") {
+
+    } else if (path === '/makepost' && req.method === 'GET' ) {
+        loadFile("views/makepost.html", res);
+
+    } else if (path === '/post' && req.method === 'GET' ) {
+        loadFile("views/post.html", res);
+
+    } else if (path === '/post/id' && req.method === 'GET' ) {
+
+        const qObj = urlObj.parse(req.url, true).query;
+        const idRaw = qObj.postid;
+        if (!idRaw) return jsonResponse(res, 400, { error: "Bad Request: Missing User ID"});
+        const postId = new mongo.ObjectId(idRaw);
+        manageCollection(res, 'posts', (res, collection, client) => {
+            collection.findOne({ _id: postId }, (err, post) => {
+
+                if(err) {
+                    console.log("Query Error: " + err);
+                    client.close();
+                    return jsonResponse(res, 500, {error: "Database Query Error"});
+                }
+
+                if(!post) {
+                    console.log("Error: this post does not exist");
+                    client.close();
+                    return jsonResponse(res, 404, {error: `No post Exists with ID ${postId}` });
+                }
+
+                post._id = post._id.toString();
+                
+                jsonResponse(res, 200, post);
+                client.close();
+            });
+        });   
+
+    }else if (path === "/posts" && req.method === "POST") {
         
         let myFormData = '';
         req.on('data', newData => { myFormData += newData.toString(); });
@@ -175,14 +272,14 @@ http.createServer((req, res) => {
                     title: e.title,
                     description: e.description
                 })));
+
+                //stringify post IDs
+                posts.forEach(post => post._id = post._id.toString());
                 
                 jsonResponse(res, 200, posts);
                 client.close();
             });
-        });
-        
-        
-        
+        });      
     } else if (path === '/posts/delete' && req.method === 'POST' ) {
         let myFormData = '';
         req.on('data', newData => { myFormData += newData.toString(); });
@@ -236,10 +333,32 @@ http.createServer((req, res) => {
         req.on('data', newData => { myFormData += newData.toString(); });
         // end = event when data stops being sent
         req.on('end', () => {
-            const postData = qs.parse(myFormData).post;
+              console.log("========== INCOMING REQUEST ==========");
+                console.log("METHOD:", req.method);
+                console.log("URL:", req.url);
+                console.log("HEADERS:", req.headers);
+                console.log("RAW BODY:", myFormData);
+                console.log("======================================");
+
+    
+
+            const parsedData = qs.parse(myFormData);
+            console.log("PARSED form data:", parsedData);
+
+            const postJson = parsedData.post;
+            if (!postJson) return jsonResponse(res, 400, { error: "Missing post field" });
+
+            let postData;
+            try {
+                postData = JSON.parse(postJson);
+            } catch (e) {
+                return jsonResponse(res, 400, { error: "post must be valid JSON" });
+            }
 
             const post = createPostObject(res, postData);
-            if (!post) return jsonResponse(res, 400, { error: 'Unable to create post'});
+
+            if (post == null) return /*jsonResponse(res, 400, { error: 'Unable to create post'})*/;
+            console.log("POST:" + JSON.stringify(post));
 
             authenticateToken(req, res, (tokenInfo) => {
                 manageCollection(res, 'posts', (res, collection, client) => {
@@ -282,7 +401,7 @@ function createPostObject(res, post) {
     const longitude = Number(post?.longitude);
 
     // validation on required fields
-    const allowedTypes = new Set(['gig', 'event', 'lesson']);
+    const allowedTypes = new Set(['gig', 'jam', 'lesson']);
 
     if (!allowedTypes.has(type)) {
         jsonResponse(res, 400, { error: 'Invalid type', allowed: Array.from(allowedTypes) });
@@ -320,8 +439,8 @@ function createPostObject(res, post) {
         description: description,
         datePosted: new Date(),
         address: address,
-        priceLowBound: priceLowBound,
-        priceHighBound: priceHighBound,
+        priceLowBound: Number(priceLowBound),
+        priceHighBound: Number(priceHighBound),
         location: {
             type: 'Point',
             coordinates: [longitude, latitude]
@@ -374,3 +493,87 @@ function toPublicUser(user) {
   // listener: no artistProfile/bandProfile attached
   return base;
 }
+
+function createUserUpdateQuery(res, body, existingUser) {
+    const allowedRoles = new Set(["listener", "artist", "band"]);
+
+    const $set = {};
+    const $unset = {};
+
+    const newRole = body.role;
+    if(newRole && !allowedRoles.has(newRole)) {
+        jsonResponse(res, 400, { error: `Bad Request: Invalid Role - ${newRole}` });
+        return null;
+    } else if (newRole && newRole !== existingUser.role) {
+        $set.role = newRole;
+        switch(newRole) {
+            case 'listener': {
+                if(existingUser.bandProfile) $unset.bandProfile = "";
+                if(existingUser.artistProfile) $unset.artistProfile = "";
+                break;
+            }
+            case 'artist': {
+                if(existingUser.bandProfile) $unset.bandProfile = "";
+                if(body.artistProfile) $set.artistProfile = body.artistProfile;
+                break;
+            }
+            case 'band': {
+                if(existingUser.artistProfile) $unset.artistProfile = "";
+                if(body.bandProfile) $set.bandProfile = body.bandProfile;
+                break;
+            }
+        }
+    } else if (newRole && newRole === existingUser.role) {
+        switch(newRole) {
+            case 'artist': {
+                if (body.artistProfile) updateArtistProfile($set, existingUser.artistProfile, body.artistProfile);
+                break;
+            }
+            case 'band': {
+                if (body.bandProfile) updateBandProfile($set, existingUser.bandProfile, body.bandProfile);
+                break;
+            }
+        }
+    }
+
+    const newContactInfo = body.contactInfo;
+    if(newContactInfo) updatecontactInfo($set, existingUser.contactInfo, newContactInfo);
+
+    const newBio = body.bio;
+    if(newBio && newBio !== existingUser.bio) $set.bio = newBio;
+
+    if (Object.keys($set).length === 0 && Object.keys($unset).length === 0) {
+        return null;
+    }
+
+    const update = {};
+    if (Object.keys($set).length) update.$set = $set;
+    if (Object.keys($unset).length) update.$unset = $unset;
+
+    return { update };
+
+}
+
+function updateArtistProfile($set, oldProf, newProf) {
+    if(newProf.legalName && oldProf.legalName !== newProf.legalName) $set["artistProfile.legalName"] = newProf.legalName;
+    if(newProf.stageName && oldProf.stageName !== newProf.stageName) $set["artistProfile.stageName"] = newProf.stageName;
+    if(typeof newProf.isInstructor === "boolean" && oldProf.isInstructor !== newProf.isInstructor) $set["artistProfile.isInstructor"] = newProf.isInstructor;
+    if(newProf.genres && sameArray(oldProf.genres && newProf.genres)) $set["artistProfile.genres"] = newProf.genres;
+    if(newProf.media && oldProf.media !== newProf.media) $set["artistProfile.media"] = newProf.media;
+    if(newProf.instrument && oldProf.instrument !== newProf.instrument) $set["artistProfile.instrument"] = newProf.instrument;
+    if(newProf.status && oldProf.status !== newProf.status) $set["artistProfile.status"] = newProf.status;
+}
+
+function updateBandProfile($set, oldProf, newProf) {
+    if(newProf.name && oldProf.name !== newProf.name) $set["bandProfile.name"] = newProf.name;
+    if(newProf.genres && oldProf.genres !== newProf.genres) $set["bandProfile.genres"] = newProf.genres;
+    if(newProf.members && oldProf.members !== newProf.members) $set["bandProfile.members"] = newProf.members;
+    if(newProf.status && oldProf.status !== newProf.status) $set["bandProfile.status"] = newProf.status;
+}
+
+function updateContactInfo($set, oldProf, newProf) {
+    if(newProf.email && oldProf.email !== newProf.email) $set["contactInfo.email"] = newProf.email;
+    if(newProf.name && oldProf.name !== newProf.name) $set["contactInfo.name"] = newProf.name;
+}
+
+const sameArray = (a,b) => Array.isArray(a) && Array.isArray(b) && a.length === b.length && a.every((value, index) => v === b[i]);

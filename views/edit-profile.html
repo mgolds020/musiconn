@@ -1,0 +1,472 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Edit Profile • Musiconn</title>
+
+    <!-- google fonts and icon library -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+      :root{
+        --red:#e63946;
+        --dred:#a22e38;
+        --gray:#666;
+        --black:#111;
+        --light:#f4f4f4;
+      }
+      *{margin:0;padding:0;box-sizing:border-box;font-family:'Inter',sans-serif;}
+      body{background:white;color:var(--black);}
+
+      header{
+        position:sticky;top:0;height:60px;background:white;border-bottom:1px solid #eee;
+        display:flex;align-items:center;justify-content:center;z-index:1500;
+      }
+      header h1{
+        font-size:18px;font-weight:600;cursor:pointer;
+      }
+
+      .banner{
+        height:160px;
+        background:linear-gradient(135deg,#e63946,#ff8fa3);
+      }
+
+      .container{
+        max-width:900px;
+        margin:0 auto;
+        padding:0 24px;
+        transform: translateY(-40px);
+      }
+
+      .top-row{
+        display:flex;
+        align-items:center;
+        gap:16px;
+      }
+
+      .role-pfp{
+        width:90px;height:90px;border-radius:50%;
+        background:#fff;border:4px solid #fff;
+        display:flex;align-items:center;justify-content:center;
+        box-shadow:0 8px 24px rgba(0,0,0,0.08);
+      }
+      .role-pfp svg{width:42px;height:42px;color:var(--black);}
+
+      .title-block{min-width:0;}
+      .name-line{
+        display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+        margin-top:6px;
+      }
+      .display-name{
+        font-size:28px;font-weight:600;line-height:1.1;
+      }
+      .role-pill{
+        display:inline-flex;align-items:center;gap:6px;
+        padding:6px 10px;border-radius:999px;
+        background:#fff;border:1px solid #eee;
+        font-size:12px;color:var(--gray);
+      }
+
+      .subtitle{
+        color:var(--gray);
+        margin-top:6px;
+      }
+
+      .grid{
+        display:grid;
+        grid-template-columns: 1fr;
+        gap:16px;
+        margin-top:18px;
+      }
+
+      .card{
+        background:white;
+        border:1px solid #eee;
+        border-radius:14px;
+        padding:16px;
+        box-shadow:0 8px 24px rgba(0,0,0,0.05);
+      }
+
+      .card h2{
+        font-size:16px;font-weight:600;margin-bottom:12px;
+      }
+
+      .row{
+        display:grid;
+        grid-template-columns: 1fr 1fr;
+        gap:12px;
+      }
+      @media (max-width: 760px){
+        .row{grid-template-columns:1fr;}
+        .display-name{font-size:24px;}
+      }
+
+      .field{display:flex;flex-direction:column;gap:6px;margin-bottom:12px;}
+      .field label{font-size:13px;color:var(--gray);}
+      .field input, .field select, .field textarea{
+        border:1px solid #ccc;border-radius:10px;
+        padding:10px 12px;font-size:14px;outline:none;
+      }
+      .field input:focus, .field select:focus, .field textarea:focus{
+        border-color:#999;
+      }
+      textarea{min-height:90px;resize:vertical;}
+
+      .hint{font-size:12px;color:var(--gray);margin-top:6px;}
+
+      .switch{
+        display:flex;align-items:center;gap:10px;margin-top:6px;
+      }
+      .switch input{width:18px;height:18px;}
+
+      .actions{
+        display:flex;
+        gap:12px;
+        margin-top:14px;
+      }
+      .btn{
+        border:1px solid #ddd;
+        background:white;
+        padding:12px 14px;
+        border-radius:10px;
+        cursor:pointer;
+        font-weight:600;
+        font-size:14px;
+      }
+      .btn.primary{
+        background:var(--red);
+        border-color:var(--red);
+        color:white;
+      }
+      .btn.primary:hover{background:var(--dred);border-color:var(--dred);}
+      .btn:hover{background:#f7f7f7;}
+
+      .hidden{display:none !important;}
+    </style>
+  </head>
+
+  <body>
+    <header>
+      <h1 onclick="location.href='/gigs'">Musiconn</h1>
+    </header>
+
+    <div class="banner"></div>
+
+    <div class="container">
+      <div class="top-row">
+        <div class="role-pfp" id="rolePfp">
+          <!-- lucide icon inserted here -->
+        </div>
+
+        <div class="title-block">
+          <div class="name-line">
+            <div class="display-name" id="displayName">Edit Profile</div>
+            <div class="role-pill" id="rolePill">
+              <span id="rolePillText">—</span>
+            </div>
+          </div>
+          <div class="subtitle" id="subtitle">Update your info and save.</div>
+        </div>
+      </div>
+
+      <form id="editForm" class="grid">
+        <!-- BASIC -->
+        <div class="card">
+          <h2>Basics</h2>
+
+          <div class="row">
+            <div class="field">
+              <label for="username">Username</label>
+              <input id="username" name="username" type="text" readonly />
+              <div class="hint">Username is not editable.</div>
+            </div>
+
+            <div class="field">
+              <label for="role">Role</label>
+              <select id="role" name="role">
+                <option value="listener">listener</option>
+                <option value="artist">artist</option>
+                <option value="band">band</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="bio">Bio</label>
+            <textarea id="bio" name="bio" placeholder="Short description…"></textarea>
+          </div>
+        </div>
+
+        <!-- CONTACT -->
+        <div class="card">
+          <h2>Contact</h2>
+          <div class="row">
+            <div class="field">
+              <label for="contactName">Name</label>
+              <input id="contactName" name="contactName" type="text" placeholder="Optional" />
+            </div>
+            <div class="field">
+              <label for="contactEmail">Email</label>
+              <input id="contactEmail" name="contactEmail" type="email" placeholder="name@example.com" />
+            </div>
+          </div>
+        </div>
+
+        <!-- ARTIST -->
+        <div class="card hidden" id="artistSection">
+          <h2>Artist Profile</h2>
+
+          <div class="row">
+            <div class="field">
+              <label for="stageName">Stage name</label>
+              <input id="stageName" type="text" placeholder="Rory" />
+            </div>
+            <div class="field">
+              <label for="legalName">Legal name</label>
+              <input id="legalName" type="text" placeholder="Rory Myers" />
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="field">
+              <label for="instrument">Instrument</label>
+              <input id="instrument" type="text" placeholder="guitar" />
+            </div>
+            <div class="field">
+              <label for="artistStatus">Status</label>
+              <input id="artistStatus" type="text" placeholder="available for gigs" />
+            </div>
+          </div>
+
+          <div class="field">
+            <label>Instructor</label>
+            <div class="switch">
+              <input id="isInstructor" type="checkbox" />
+              <span>Available for lessons</span>
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="artistGenres">Genres</label>
+            <input id="artistGenres" type="text" placeholder="rock, indie" />
+            <div class="hint">Comma-separated (e.g. <b>rock, indie</b>).</div>
+          </div>
+        </div>
+
+        <!-- BAND -->
+        <div class="card hidden" id="bandSection">
+          <h2>Band Profile</h2>
+
+          <div class="row">
+            <div class="field">
+              <label for="bandName">Band name</label>
+              <input id="bandName" type="text" placeholder="Midnight Radio" />
+            </div>
+            <div class="field">
+              <label for="bandStatus">Status</label>
+              <input id="bandStatus" type="text" placeholder="active" />
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="bandGenres">Genres</label>
+            <input id="bandGenres" type="text" placeholder="rock, shoegaze" />
+            <div class="hint">Comma-separated.</div>
+          </div>
+        </div>
+
+        <!-- ACTIONS -->
+        <div class="card">
+          <h2>Save</h2>
+          <div class="actions">
+            <button type="button" class="btn" id="cancelBtn">Cancel</button>
+            <button type="submit" class="btn primary">Save changes</button>
+          </div>
+          <div class="hint" id="statusMsg"></div>
+        </div>
+      </form>
+    </div>
+
+    <script>
+      lucide.createIcons();
+
+      // -------- Helpers --------
+      function qs(name) {
+        return new URLSearchParams(location.search).get(name);
+      }
+
+      function parseCommaList(s) {
+        return String(s || "")
+          .split(",")
+          .map(x => x.trim())
+          .filter(Boolean);
+      }
+
+      function setRoleIcon(role) {
+        const rolePfp = document.getElementById("rolePfp");
+        rolePfp.innerHTML = ""; // clear
+
+        const iconName =
+          role === "artist" ? "mic-vocal" :
+          role === "band" ? "guitar" :
+          "headphones";
+
+        const i = document.createElement("i");
+        i.setAttribute("data-lucide", iconName);
+        rolePfp.appendChild(i);
+        lucide.createIcons();
+
+        document.getElementById("rolePillText").textContent = role ? role.toUpperCase() : "—";
+      }
+
+      function showRoleSections(role) {
+        document.getElementById("artistSection").classList.toggle("hidden", role !== "artist");
+        document.getElementById("bandSection").classList.toggle("hidden", role !== "band");
+        setRoleIcon(role);
+      }
+
+      // -------- Fill form from backend user --------
+      function fillForm(user) {
+        document.getElementById("displayName").textContent =
+          (user?.role === "band" ? (user?.bandProfile?.name || user?.username) :
+           user?.role === "artist" ? (user?.artistProfile?.stageName || user?.username) :
+           user?.username) || "Edit Profile";
+
+        document.getElementById("username").value = user?.username || "";
+        document.getElementById("role").value = user?.role || "listener";
+        document.getElementById("bio").value = user?.bio || "";
+
+        document.getElementById("contactEmail").value = user?.contactInfo?.email || "";
+        document.getElementById("contactName").value = user?.contactInfo?.name || "";
+
+        // artist
+        document.getElementById("stageName").value = user?.artistProfile?.stageName || "";
+        document.getElementById("legalName").value = user?.artistProfile?.legalName || "";
+        document.getElementById("instrument").value = user?.artistProfile?.instrument || "";
+        document.getElementById("artistStatus").value = user?.artistProfile?.status || "";
+        document.getElementById("isInstructor").checked = !!user?.artistProfile?.isInstructor;
+        document.getElementById("artistGenres").value = (user?.artistProfile?.genres || []).join(", ");
+
+        // band
+        document.getElementById("bandName").value = user?.bandProfile?.name || "";
+        document.getElementById("bandStatus").value = user?.bandProfile?.status || "";
+        document.getElementById("bandGenres").value = (user?.bandProfile?.genres || []).join(", ");
+
+        showRoleSections(user?.role || "listener");
+      }
+
+      // -------- Build payload to send back --------
+      function buildPayload() {
+        const username = document.getElementById("username").value.trim();
+        const role = document.getElementById("role").value;
+
+        const payload = {
+          username: username,
+          role: role,
+          bio: document.getElementById("bio").value.trim(),
+          contactInfo: {
+            name: document.getElementById("contactName").value.trim(),
+            email: document.getElementById("contactEmail").value.trim(),
+          },
+        };
+
+        if (role === "artist") {
+          payload.artistProfile = {
+            stageName: document.getElementById("stageName").value.trim(),
+            legalName: document.getElementById("legalName").value.trim(),
+            instrument: document.getElementById("instrument").value.trim(),
+            status: document.getElementById("artistStatus").value.trim(),
+            isInstructor: document.getElementById("isInstructor").checked,
+            genres: parseCommaList(document.getElementById("artistGenres").value),
+          };
+        }
+
+        if (role === "band") {
+          payload.bandProfile = {
+            name: document.getElementById("bandName").value.trim(),
+            status: document.getElementById("bandStatus").value.trim(),
+            genres: parseCommaList(document.getElementById("bandGenres").value),
+          };
+        }
+
+        // listener: no artistProfile/bandProfile
+        return payload;
+      }
+
+      // -------- Load profile --------
+      async function loadProfile() {
+        const username = qs("username");
+        if (!username) {
+          alert("Missing ?username= in URL");
+          return;
+        }
+
+        try {
+          const res = await fetch(`/users?username=${encodeURIComponent(username)}`);
+          const data = await res.json();
+
+          if (!res.ok) {
+            console.error(data);
+            alert(data?.error || "Failed to load profile");
+            return;
+          }
+
+          fillForm(data);
+        } catch (err) {
+          console.error(err);
+          alert("Failed to load profile.");
+        }
+      }
+
+      // -------- Events --------
+      document.getElementById("role").addEventListener("change", (e) => {
+        showRoleSections(e.target.value);
+      });
+
+      document.getElementById("cancelBtn").addEventListener("click", () => {
+        // back to profile view page
+        const u = document.getElementById("username").value.trim();
+        location.href = `/profile?username=${encodeURIComponent(u)}`;
+      });
+
+      document.getElementById("editForm").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const statusMsg = document.getElementById("statusMsg");
+        statusMsg.textContent = "Saving…";
+
+        const payload = buildPayload();
+
+        try {
+          const res = await fetch("/users", {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          });
+
+          const data = await res.json().catch(() => ({}));
+
+          if (!res.ok) {
+            console.error(data);
+            statusMsg.textContent = data?.error || "Save failed.";
+            return;
+          }
+
+          statusMsg.textContent = "Saved!";
+          setTimeout(() => {
+            location.href = `/profile?username=${encodeURIComponent(payload.username)}`;
+          }, 300);
+        } catch (err) {
+          console.error(err);
+          statusMsg.textContent = "Save failed (network/server error).";
+        }
+      });
+
+      // boot
+      loadProfile();
+    </script>
+  </body>
+</html>

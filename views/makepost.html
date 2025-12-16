@@ -164,7 +164,7 @@
           <div class="input-wrapper">
             <select id="type" required>
               <option value="" disabled selected>Select type</option>
-              <option value="event">event</option>
+              <option value="gig">gig</option>
               <option value="jam">jam</option>
               <option value="lesson">lesson</option>
             </select>
@@ -189,6 +189,41 @@
           <label for="address">Address</label>
           <div class="input-wrapper">
             <input type="text" id="address" placeholder="e.g., Davis Square, Somerville, MA" required />
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Manual coordinates (optional)</label>
+
+          <div class="row">
+            <div class="field" style="margin-bottom:0;">
+              <label for="manualLng">Longitude</label>
+              <div class="input-wrapper">
+                <input
+                  type="number"
+                  id="manualLng"
+                  step="any"
+                  placeholder="-71.1217"
+                />
+              </div>
+            </div>
+
+            <div class="field" style="margin-bottom:0;">
+              <label for="manualLat">Latitude</label>
+              <div class="input-wrapper">
+                <input
+                  type="number"
+                  id="manualLat"
+                  step="any"
+                  placeholder="42.3954"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div class="hint" style="text-align:left; margin-top:8px;">
+            If the address can’t be found, you can enter coordinates directly.
+            Format is <code>[longitude, latitude]</code>.
           </div>
         </div>
 
@@ -227,119 +262,200 @@
   </main>
 
   <script>
-    lucide.createIcons();
+  lucide.createIcons();
 
-    const form = document.getElementById("postForm");
-    const errorText = document.getElementById("errorText");
+  const form = document.getElementById("postForm");
+  const errorText = document.getElementById("errorText");
 
-    const typeEl = document.getElementById("type");
-    const eventDateField = document.getElementById("eventDateField");
-    const eventDateEl = document.getElementById("eventDate");
+  const typeEl = document.getElementById("type");
+  const eventDateField = document.getElementById("eventDateField");
+  const eventDateEl = document.getElementById("eventDate");
 
-    typeEl.addEventListener("change", () => {
-      const isEvent = typeEl.value === "event";
-      eventDateField.style.display = isEvent ? "block" : "none";
-      eventDateEl.required = isEvent;
-      if (!isEvent) eventDateEl.value = "";
-    });
+  // Manual coords (make sure you added these inputs in the HTML)
+  const manualLngEl = document.getElementById("manualLng");
+  const manualLatEl = document.getElementById("manualLat");
 
-    async function geocode(address) {
-      const url =
-        "https://nominatim.openstreetmap.org/search?format=json&q=" +
-        encodeURIComponent(address);
+  function getManualCoords() {
+    if (!manualLngEl || !manualLatEl) return null;
 
-      const res = await fetch(url, { headers: { Accept: "application/json" } });
-      const data = await res.json();
-      if (!data || data.length === 0) return null;
+    const lngStr = manualLngEl.value.trim();
+    const latStr = manualLatEl.value.trim();
 
-      return {
-        lat: Number(data[0].lat),
-        lng: Number(data[0].lon),
-      };
+    // If user didn't provide them, treat as "not provided"
+    if (!lngStr && !latStr) return null;
+
+    const lng = Number(lngStr);
+    const lat = Number(latStr);
+
+    if (!Number.isFinite(lng) || !Number.isFinite(lat)) {
+      return { error: "Manual coordinates must be valid numbers." };
+    }
+    if (lng < -180 || lng > 180) {
+      return { error: "Longitude must be between -180 and 180." };
+    }
+    if (lat < -90 || lat > 90) {
+      return { error: "Latitude must be between -90 and 90." };
     }
 
-    form.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      errorText.textContent = "";
+    return { lng, lat };
+  }
 
-      const type = typeEl.value;
-      const title = document.getElementById("title").value.trim();
-      const description = document.getElementById("description").value.trim();
-      const address = document.getElementById("address").value.trim();
+  typeEl.addEventListener("change", () => {
+    const isEvent = typeEl.value === "gig";
+    const isJam = typeEl.value === "jam";
+    eventDateField.style.display = (isEvent || isJam) ? "block" : "none";
+    eventDateEl.required = isEvent || isJam;
+    if (!isEvent && !isJam) eventDateEl.value = "";
+  });
 
-      const priceLowBound = Number(document.getElementById("priceLow").value);
-      const priceHighBound = Number(document.getElementById("priceHigh").value);
+  async function geocode(address) {
+    const url =
+      "https://nominatim.openstreetmap.org/search" +
+      "?format=json&limit=1&countrycodes=us&q=" + encodeURIComponent(address);
 
-      if (!type || !title || !description || !address) return;
+    console.log("Geocode URL:", url);
 
-      if (!Number.isFinite(priceLowBound) || !Number.isFinite(priceHighBound) || priceLowBound < 0 || priceHighBound < 0) {
-        errorText.textContent = "Prices must be valid non-negative numbers.";
+    let res;
+    try {
+      res = await fetch(url, { headers: { Accept: "application/json" } });
+    } catch (e) {
+      console.log("Geocode fetch threw:", e);
+      return null;
+    }
+
+    console.log("Geocode status:", res.status);
+
+    let data;
+    try {
+      data = await res.json();
+    } catch (e) {
+      console.log("Geocode JSON parse threw:", e);
+      return null;
+    }
+
+    console.log("Geocode data:", data);
+
+    if (!Array.isArray(data) || data.length === 0) return null;
+
+    const lat = Number(data[0].lat);
+    const lng = Number(data[0].lon);
+    console.log("Parsed:", { lat, lng });
+
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+
+    return { lat, lng };
+  }
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    errorText.textContent = "";
+
+    const type = typeEl.value;
+    const title = document.getElementById("title").value.trim();
+    const description = document.getElementById("description").value.trim();
+    const address = document.getElementById("address").value.trim();
+
+    const priceLowBound = Number(document.getElementById("priceLow").value);
+    const priceHighBound = Number(document.getElementById("priceHigh").value);
+
+    if (!type || !title || !description || !address) return;
+
+    if (
+      !Number.isFinite(priceLowBound) ||
+      !Number.isFinite(priceHighBound) ||
+      priceLowBound < 0 ||
+      priceHighBound < 0
+    ) {
+      errorText.textContent = "Prices must be valid non-negative numbers.";
+      return;
+    }
+
+    if (priceHighBound < priceLowBound) {
+      errorText.textContent = "Price high must be ≥ price low.";
+      return;
+    }
+
+    console.log("Geocode query:", address);
+
+    let coords = await geocode(address);
+
+    console.log("Geocode returned:", coords);
+
+    // If geocode failed, try manual coords (optional)
+    if (!coords || !Number.isFinite(coords.lat) || !Number.isFinite(coords.lng)) {
+      const manual = getManualCoords();
+
+      if (!manual) {
+        errorText.textContent =
+          "Could not find that address. You can optionally enter latitude and longitude.";
         return;
       }
 
-      if (priceHighBound < priceLowBound) {
-        errorText.textContent = "Price high must be ≥ price low.";
+      if (manual.error) {
+        errorText.textContent = manual.error;
         return;
       }
 
-      const coords = await geocode(address);
-      if (!coords || !Number.isFinite(coords.lat) || !Number.isFinite(coords.lng)) {
-        errorText.textContent = "Could not find that address. Try a more specific one.";
+      coords = { lng: manual.lng, lat: manual.lat };
+      console.log("Using manual coords:", coords);
+    }
+
+    const longitude = coords.lng;
+    const latitude = coords.lat;
+
+    const accessToken = sessionStorage.getItem("accessToken");
+    if (!accessToken) {
+      errorText.textContent = "You must be logged in to create a post.";
+      return;
+    }
+
+    const post = {
+      type,
+      title,
+      description,
+      priceLowBound,
+      priceHighBound,
+      address,
+      longitude,
+      latitude
+    };
+
+    
+
+    if (type === "gig" || type === "jam") {
+      if (!eventDateEl.value) {
+        errorText.textContent = "Event date is required for gigs and jams.";
+        return;
+      }
+      post.eventDate = new Date(eventDateEl.value).toISOString();
+    }
+
+    try {
+      const res = await fetch("/posts/create", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+          "Authorization": `Bearer ${accessToken}`
+        },
+        body: new URLSearchParams({
+          post: JSON.stringify(post)   // server expects qs.parse(...).post
+        })
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        errorText.textContent = data?.error || "Failed to create post.";
         return;
       }
 
-      const accessToken = sessionStorage.getItem("accessToken");
-      if (!accessToken) {
-        errorText.textContent = "You must be logged in to create a post.";
-        return;
-      }
+      window.location.href = "gigs.html";
+    } catch (err) {
+      console.error(err);
+      errorText.textContent = "Request failed. Check server is running.";
+    }
+  });
+</script>
 
-      const post = {
-        type,
-        title,
-        description,
-        address,
-        datePosted: new Date().toISOString(),
-        priceLowBound,
-        priceHighBound,
-        location: {
-          type: "Point",
-          coordinates: [coords.lng, coords.lat] // IMPORTANT: [lng, lat]
-        }
-      };
-
-      if (type === "event") {
-        if (!eventDateEl.value) {
-          errorText.textContent = "Event date is required for events.";
-          return;
-        }
-        post.eventDate = new Date(eventDateEl.value).toISOString();
-      }
-
-      try {
-        const res = await fetch("/posts", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${accessToken}`
-          },
-          body: JSON.stringify(post)
-        });
-
-        const data = await res.json();
-        if (!res.ok) {
-          errorText.textContent = data?.error || "Failed to create post.";
-          return;
-        }
-
-        // On success, go back to gigs (or map)
-        window.location.href = "gigs.html";
-      } catch (err) {
-        console.error(err);
-        errorText.textContent = "Request failed. Check server is running.";
-      }
-    });
-  </script>
 
 </body>
 </html>

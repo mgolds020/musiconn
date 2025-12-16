@@ -1,311 +1,316 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Post • Musiconn</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Post • Musiconn</title>
 
-    <!-- google fons and icon library -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
-    <script src="https://unpkg.com/lucide@latest"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
 
-    <style>
-        :root { 
-            --red:#e63946;
-            --gray:#666; 
-            --black:#111; 
-            --light:#f4f4f4; 
-        }
+  <style>
+    :root {
+      --red:#e63946;
+      --gray:#666;
+      --black:#111;
+      --light:#f4f4f4;
+    }
 
-        * {
-            margin:0; 
-            padding:0; 
-            box-sizing:border-box; 
-            font-family:'Inter',sans-serif;
-        }
+    * { margin:0; padding:0; box-sizing:border-box; font-family:'Inter',sans-serif; }
+    body { background:#fff; }
 
-        body { 
-            background:#fff; 
-        }
+    header {
+      position: sticky;
+      top: 0;
+      height: 60px;
+      background: #fff;
+      border-bottom: 1px solid #eee;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1500;
+    }
 
-        header {
-            position: sticky;
-            top: 0;
-            height: 60px;
-            background: #fff; /* prevents transparency when scrolling */
-            border-bottom: 1px solid #eee;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 1500; /* stays above content but below menu button */
-        }
+    header h1 {
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 18px;
+      font-weight: 600;
+      cursor: pointer;
+      margin: 0;
+    }
 
-        header h1 {
-            position: absolute;
-            left: 50%;
-            transform: translateX(-50%);
-            font-size: 18px;
-            font-weight: 600;
-            cursor: pointer;
-            margin: 0;
-        }
+    #menuBtn {
+      position: fixed;
+      top: 16px;
+      left: 20px;
+      z-index: 2000;
+      transition: left 0.3s ease;
+    }
 
-        /* MENU BUTTON — fixed so it can slide with menu */
-        #menuBtn {
-            position: fixed;
-            top: 14px;
-            left: 20px;
-            z-index: 3000;
-            transition: left 0.3s ease;
-        }
+    body.menu-open #menuBtn { left: 244px; }
 
-        /* slide menu button with menu */
-        body.menu-open #menuBtn {
-            left: 244px;
-        }
+    header .icon-btn:last-of-type {
+      position: absolute;
+      right: 24px;
+      top: 50%;
+      transform: translateY(-50%);
+    }
 
-        /* PROFILE ICON — right side, absolutely positioned */
-        header .icon-btn:last-of-type {
-            position: absolute;
-            right: 24px;
-            top: 50%;
-            transform: translateY(-50%);
-        }
+    .menu {
+      position: fixed;
+      top: 60px;
+      left: -220px;
+      width: 220px;
+      height: 100vh;
+      background: #fff;
+      border-right: 1px solid #eee;
+      padding: 24px;
+      transition: left 0.3s ease;
+      z-index: 1000;
+    }
+    .menu.open { left: 0; }
 
+    .menu a {
+      display: block;
+      margin-bottom: 16px;
+      text-decoration: none;
+      color: var(--black);
+      font-weight: 500;
+    }
+    .menu a.active { color: var(--red); }
 
-        /* slide-out menu that overlays and doesn't push content */
-        .menu {
-            position: fixed;
-            top: 60px;
-            left: -220px;           /* start hidden off-screen */
-            width: 220px;
-            height: 100vh;
-            background: #fff;
-            border-right: 1px solid #eee;
-            padding: 24px;
-            transition: left 0.3s ease;
-            z-index: 1000;
-        }
+    .icon-btn { cursor:pointer; color:var(--gray); }
+    .icon-btn:hover { color:var(--black); }
 
-        /* when we add .open in JS, it slides in */
-        .menu.open {
-            left: 0;
-        }
+    .container {
+      max-width:900px;
+      margin:24px auto;
+      padding:0 24px;
+    }
 
-        /* Make menu button move with menu */
-        #menuBtn {
-            position: fixed;
-            top: 16px;
-            left: 20px;
-            z-index: 2000;
-            transition: left 0.3s ease;
-        }
+    .post-header {
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      margin-bottom:16px;
+    }
 
-        /* When menu is open, shift the button to the right */
-        .menu.open ~ #menuBtn,
-        .menu.open + #menuBtn {
-            left: 244px; /* 220px menu + some margin */
-        }
+    .badge {
+      padding:4px 8px;
+      border-radius:6px;
+      font-size:12px;
+      font-weight: 600;
+      letter-spacing: .02em;
+    }
+    .gig { background: rgba(230,57,70,0.15); color: var(--red); }
+    .learn { background: #eee; color: var(--black); }
+    .jam { background: #111; color: #fff; } /* fixed */
 
-        .menu a {
-            display: block;
-            margin-bottom: 16px;
-            text-decoration: none;
-            color: var(--black);
-            font-weight: 500;
-        }
+    .title { font-size:24px; font-weight:600; margin-bottom:8px; }
+    .desc { font-size:16px; color:var(--gray); margin-bottom:20px; }
 
-        .menu a.active {
-        color: var(--red);
-        }
+    .profile {
+      display:flex; align-items:center; gap:12px;
+      cursor:pointer;
+      margin-bottom:24px;
+    }
+    .pfp { width:48px; height:48px; border-radius:50%; background:#ccc; }
 
-        .icon-btn {
-            cursor:pointer;
-            color:var(--gray); }
+    .price-box {
+      padding:10px 14px;
+      border-radius:8px;
+      background:var(--light);
+      border:1px solid #ddd;
+      font-weight:600;
+      display:inline-block;
+      margin-bottom:20px;
+    }
 
-        .icon-btn:hover {
-            color:var(--black); 
-        }
+    .section-title {
+      font-size:18px;
+      margin:24px 0 8px;
+      font-weight:600;
+    }
 
-        .container {
-        max-width:900px;
-        margin:24px auto;
-        padding:0 24px;
-        }
+    .back {
+      position: absolute;
+      top: 76px;
+      left: 16px;
+      z-index: 10;
+      cursor:pointer;
+    }
 
-        .post-header {
-        display:flex;
-        justify-content:space-between;
-        align-items:center;
-        margin-bottom:16px;
-        }
+    .back-circle {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      background: rgba(0,0,0,0.25);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
 
-        .badge { 
-            padding:4px 8px;
-            border-radius:6px;
-            font-size:12px; 
-        }
-        .gig{
-            background:rgba(230,57,70,0.15);
-            color:var(--red);
-        } 
-        .learn{
-            background:#ddd;
-        } 
-        .jam{
-            background:#111;
-            color:rgba(255, 255, 255, 0);} 
+    .back-circle svg { width: 24px; height: 24px; stroke: white; }
+    .back-circle:hover { background: rgba(0,0,0,0.35); }
 
-        .title { 
-            font-size:24px; 
-            font-weight:600; 
-            margin-bottom:8px; 
-        }
-        .desc { 
-            font-size:16px; color:var(--gray);
-            margin-bottom:20px;
-        }
-
-        .profile {
-        display:flex; align-items:center; gap:12px;
-        cursor:pointer;
-        margin-bottom:24px;
-        }
-
-        .pfp {
-        width:48px; height:48px;
-        border-radius:50%; background:#ccc;
-        }
-
-        .price-box {
-        padding:10px 14px;
-        border-radius:8px;
-        background:var(--light);
-        border:1px solid #ddd;
-        font-weight:600;
-        display:inline-block;
-        margin-bottom:20px;
-        }
-
-        .section-title {
-        font-size:18px;
-        margin:24px 0 8px;
-        font-weight:600;
-        }
-
-        .back {
-            position: absolute;
-            top: 76px;
-            left: 16px;
-            z-index: 10;
-            cursor:pointer;
-        }
-
-        .back-circle {
-            width: 42px;
-            height: 42px;
-            border-radius: 50%;
-            background: rgba(0,0,0,0.25);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .back-circle svg {
-            width: 24px;
-            height: 24px;
-            stroke: white;
-        }
-
-        .back-circle:hover {
-            background: rgba(0,0,0,0.35);
-        }
-    </style>
+    .muted { color: var(--gray); font-size: 14px; }
+  </style>
 </head>
+
 <body>
+  <header>
+    <i data-lucide="menu" class="icon-btn" id="menuBtn"></i>
+    <h1 onclick="location.href='gigs.html?view=gig'">Musiconn</h1>
+    <i data-lucide="user" class="icon-btn" onclick="location.href='profile.html'"></i>
+  </header>
 
-    <header>
-        <i data-lucide="menu" class="icon-btn" id="menuBtn"></i>
-        <h1 onclick="location.href='gigs.html'" onclick="location.href='gigs.html?view=gig'">Musiconn</h1>
-        <i data-lucide="user" class="icon-btn" onclick="location.href='profile.html'"></i>
-    </header>
+  <div class="container">
+    <nav class="menu" id="sideMenu">
+      <a href="map.html">Map</a>
+      <a href="gigs.html?view=gig">Gigs</a>
+      <a href="gigs.html?view=learn">Learn</a>
+      <a href="gigs.html?view=jam">Jam</a>
+    </nav>
 
+    <div class="back" onclick="history.back()">
+      <div class="back-circle">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+             stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="15 18 9 12 15 6"></polyline>
+        </svg>
+      </div>
+    </div>
 
-    <div class="container">
-        <nav class="menu" id="sideMenu">
-            <a href="#">Map</a>
-            <a href="gigs.html?view=gig">Gigs</a>
-            <a href="gigs.html?view=learn">Learn</a>
-            <a href="gigs.html?view=jam">Jam</a>
-        </nav>
+    <main class="content" id="postContainer"></main>
+  </div>
 
-        <div class="back" onclick="history.back()">
-            <div class="back-circle">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
-                     stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <polyline points="15 18 9 12 15 6"></polyline>
-                </svg>
+  <script>
+    lucide.createIcons();
+
+    const menuBtn = document.getElementById("menuBtn");
+    const sideMenu = document.getElementById("sideMenu");
+    if (menuBtn && sideMenu) {
+      menuBtn.addEventListener("click", () => {
+        sideMenu.classList.toggle("open");
+        document.body.classList.toggle("menu-open", sideMenu.classList.contains("open"));
+      });
+    }
+
+    function getQueryParam(name) {
+      return new URLSearchParams(window.location.search).get(name);
+    }
+
+    function formatPriceFromBounds(post) {
+      const low = Number(post?.priceLowBound ?? 0);
+      const high = Number(post?.priceHighBound ?? 0);
+      if (low === 0 && high === 0) return "Free";
+      if (Number.isFinite(low) && Number.isFinite(high) && low === high) return `$${low}`;
+      if (Number.isFinite(low) && Number.isFinite(high)) return `$${low}–$${high}`;
+      return "";
+    }
+
+    function formatDateTime(iso) {
+      if (!iso) return "";
+      const d = new Date(iso);
+      if (Number.isNaN(d.getTime())) return "";
+      return d.toLocaleString();
+    }
+
+    function normalizeType(t) {
+      const x = String(t || "").toLowerCase();
+      if (x === "gig" || x === "learn" || x === "jam") return x;
+      // your DB also sometimes uses "event" — map it to gig styling unless you prefer otherwise
+      if (x === "event") return "gig";
+      return "gig";
+    }
+
+    function renderPost(post) {
+      const c = document.getElementById("postContainer");
+      const type = normalizeType(post?.type);
+      const title = post?.title ?? "(untitled)";
+      const desc = post?.description ?? "";
+      const price = formatPriceFromBounds(post);
+      const eventDate = formatDateTime(post?.eventDate);
+      const address = post?.address ?? "";
+
+      // If you later add author username to the post response, swap this link to profile?username=...
+      const authorId = post?.authorId ? String(post.authorId) : "";
+      const profileLink = authorId ? `profile.html?id=${encodeURIComponent(authorId)}` : "profile.html";
+
+      c.innerHTML = `
+        <div class="post-header">
+          <span class="badge ${type}">${type.toUpperCase()}</span>
+        </div>
+
+        <div class="title">${title}</div>
+        ${desc ? `<div class="desc">${desc}</div>` : `<div class="desc muted">No description.</div>`}
+
+        <div class="profile"
+            onclick="location.href='/profile?username=${encodeURIComponent(post.author)}'">
+            <div class="pfp"></div>
+            <div>
+                <div style="font-weight:600;">
+                        ${post.author}
+                </div>
+                <div style="font-size:14px; color:var(--gray);">
+                    View profile
+                </div>
             </div>
         </div>
 
-        <main class="content" id="postContainer"></main>
-    </div>
+        ${price ? `<div class="price-box">${price}</div>` : ""}
 
-    <script>
-        lucide.createIcons();
+        <div class="section-title">Date & Time</div>
+        <div>${eventDate || `<span class="muted">No date provided.</span>`}</div>
 
-        const menuBtn = document.getElementById('menuBtn');
-        const sideMenu = document.getElementById('sideMenu');
+        <div class="section-title">Location</div>
+        <div>${address || `<span class="muted">No address provided.</span>`}</div>
+      `;
+    }
 
-        if (menuBtn && sideMenu) {
-            menuBtn.addEventListener('click', () => {
-                sideMenu.classList.toggle('open');
-            });
+    async function fetchPostById(postId) {
+        return fetch(`/post/id?postid=${encodeURIComponent(postId)}`);
+    }
+
+
+    async function loadPost() {
+      const postId = getQueryParam("id");
+      const c = document.getElementById("postContainer");
+
+      if (!postId) {
+        c.innerHTML = `<div class="muted">No post id provided. Open this page like <b>post.html?id=...</b></div>`;
+        return;
+      }
+
+      c.innerHTML = `<div class="muted">Loading…</div>`;
+
+      try {
+        const res = await fetchPostById(postId);
+        const data = await res.json().catch(() => null);
+
+        if (!res.ok) {
+          console.error("Failed to load post:", data);
+          c.innerHTML = `<div class="muted">Could not load this post.</div>`;
+          return;
         }
 
-        // MOCK POST: load based on URL parameter ?id=1
-        const post = {
-            id: 1,
-            type: 'gig',
-            title: 'Looking for a drummer',
-            desc: 'We need an experienced drummer for a Friday night paid show. Must be comfortable with rock and pop.',
-            price: '$150-$250',
-            date: 'Feb 12, 2026 @ 8:00 PM',
-            location: 'Boston, MA',
-            profileName: 'Cool Band',
-        };
-
-        function loadPost() {
-            const c = document.getElementById('postContainer');
-
-            c.innerHTML = `
-            <div class="post-header">
-                <span class="badge ${post.type}">${post.type.toUpperCase()}</span>
-            </div>
-
-            <div class="title">${post.title}</div>
-            <div class="desc">${post.desc}</div>
-
-            <div class="profile" onclick="location.href='profile.html'">
-                <div class="pfp"></div>
-                <div>
-                <div style="font-weight:600;">${post.profileName}</div>
-                <div style="font-size:14px; color:var(--gray);">View Profile</div>
-                </div>
-            </div>
-
-            <div class="price-box">${post.price}</div>
-
-            <div class="section-title">Date & Time</div>
-            <div>${post.date}</div>
-
-            <div class="section-title">Location</div>
-            <div>${post.location}</div>
-            `;
+        // Some servers return [post] instead of post
+        const post = Array.isArray(data) ? data[0] : data;
+        if (!post) {
+          c.innerHTML = `<div class="muted">Post not found.</div>`;
+          return;
         }
 
-        loadPost();
-    </script>
+        renderPost(post);
+      } catch (err) {
+        console.error(err);
+        c.innerHTML = `<div class="muted">Failed to load post.</div>`;
+      }
+    }
 
+    loadPost();
+  </script>
 </body>
 </html>
