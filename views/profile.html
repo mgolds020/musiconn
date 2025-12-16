@@ -9,350 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
 
-    <link rel="stylesheet" href="/styles/profile.css">
-    <style>
-        :root {
-            --red:#e63946;
-            --dred:#a22e38;
-            --gray:#666;
-            --black:#111;
-            --light:#f4f4f4;
-        }
-        * { margin:0; padding:0; box-sizing:border-box; font-family:'Inter',sans-serif; }
-
-        body { background:white; }
-
-        header {
-            position: sticky;
-            top: 0;
-            height: 60px;
-            background: white; /* prevents transparency when scrolling */
-            border-bottom: 1px solid #eee;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 1500; /* stays above content but below menu button */
-        }
-
-        /* center the title */
-        header h1 {
-            position: absolute;
-            left: 50%;
-            transform: translateX(-50%);
-            font-size: 18px;
-            font-weight: 600;
-            cursor: pointer;
-            margin: 0;
-        }
-
-        /* MENU BUTTON — fixed so it can slide with menu */
-        #menuBtn {
-            position: fixed;
-            top: 14px;
-            left: 20px;
-            z-index: 3000;
-            transition: left 0.3s ease;
-        }
-
-        /* slide menu button with menu */
-        body.menu-open #menuBtn {
-            left: 244px;
-        }
-
-        /* PROFILE ICON — right side, absolutely positioned */
-        header .icon-btn:last-of-type {
-            position: absolute;
-            right: 24px;
-            top: 50%;
-            transform: translateY(-50%);
-        }
-
-
-        /* slide-out menu that overlays and doesn't push content */
-        .menu {
-            position: fixed;
-            top: 60px;
-            left: -220px;           /* start hidden off-screen */
-            width: 220px;
-            height: 100vh;
-            background: #fff;
-            border-right: 1px solid #eee;
-            padding: 24px;
-            transition: left 0.3s ease;
-            z-index: 1000;
-        }
-
-        /* when we add .open in JS, it slides in */
-        .menu.open {
-            left: 0;
-        }
-
-        /* Make menu button move with menu */
-        #menuBtn {
-            position: fixed;
-            top: 16px;
-            left: 20px;
-            z-index: 2000;
-            transition: left 0.3s ease;
-        }
-
-        /* When menu is open, shift the button to the right */
-        .menu.open ~ #menuBtn,
-        .menu.open + #menuBtn {
-            left: 244px; /* 220px menu + some margin */
-        }
-
-
-        .menu a {
-            display: block;
-            margin-bottom: 16px;
-            text-decoration: none;
-            color: var(--black);
-            font-weight: 500;
-        }
-
-        .menu a.active {
-        color: var(--red);
-        }
-
-        .icon-btn { 
-            cursor:pointer; 
-            color:var(--gray); 
-        }
-        .icon-btn:hover { 
-            color:var(--black); 
-        }
-
-        .banner {
-            position: relative;
-            height: 180px;
-            background: linear-gradient(135deg,#e63946,#ff8fa3);
-        }
-
-        /* back button inside banner */
-        .banner-back {
-            position: absolute;
-            top: 16px;
-            left: 16px;
-            z-index: 10;
-            cursor:pointer;
-        }
-
-        .back-circle {
-            width: 42px;
-            height: 42px;
-            border-radius: 50%;
-            background: rgba(0,0,0,0.25);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .back-circle svg {
-            width: 24px;
-            height: 24px;
-            stroke: white;
-        }
-
-        .back-circle:hover {
-            background: rgba(0,0,0,0.35);
-        }
-
-        .profile-container {
-            max-width:900px;
-            margin:0 auto;
-            padding:0 24px;
-            position:relative;
-            top:-40px;
-        }
-
-        .pfp {
-            width:110px; height:110px;
-            border-radius:50%; background:#ccc;
-            border:4px solid white;
-        }
-
-        .name {
-            font-size:26px;
-            font-weight:600;
-            margin-top:12px;
-        
-        }
-        .bio {
-            color:var(--gray);
-            margin-top:6px;
-        }
-
-        .section-title {
-            font-size:18px; font-weight:600;
-            margin:32px 0 12px;
-        }
-
-        /* posts carousel */
-        .carousel {
-            display:flex;
-            flex-wrap:nowrap;
-            gap:16px;
-            overflow-x:auto;
-            overflow-y:hidden;
-            padding-bottom:10px;
-            scroll-behavior:smooth;
-        }
-
-        .post-card {
-            flex: 0 0 auto;     /* don’t let flex-basis do anything clever */
-            width: 240px;
-            min-width: 240px;
-            max-width: 240px;
-
-            border: 1px solid #eee;
-            border-radius: 12px;
-            padding: 16px;
-            background: white;
-            cursor: pointer;
-        }
-
-        .post-card p {
-            display: -webkit-box;
-            -webkit-line-clamp: 2;   /* number of lines to show */
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .post-card h3 {
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .post-card h3 { font-size:16px; margin-bottom:6px; }
-        .post-card p { color:var(--gray); font-size:14px; }
-
-
-        /* create post button */
-        .add-btn {
-            position:fixed;
-            bottom:24px; right:24px;
-            width:60px; height:60px;
-            border-radius:50%;
-            background:var(--red);
-            display:flex; align-items:center; justify-content:center;
-            cursor:pointer;
-        }
-        .add-btn i { color:white; }
-
-        /* pop-up */
-        .modal-bg {
-            display:none;
-            position:fixed; inset:0;
-            background:rgba(0,0,0,0.4);
-            align-items:center; justify-content:center;
-            z-index:4000; /* ensure it sits above arrows and header */
-        }
-
-        .modal {
-            width:420px;
-            background:white;
-            border-radius:12px;
-            padding:24px;
-            box-shadow:0 8px 24px rgba(0,0,0,0.15);
-        }
-        .modal h2 { margin-bottom:16px; }
-
-        .field { margin-bottom:14px; }
-        .field label { display:block; margin-bottom:4px; font-size:14px; }
-        .field input, .field select, .field textarea {
-            width:100%; padding:10px; border:1px solid #ccc;
-            border-radius:8px;
-        }
-        textarea { height:90px; resize:none; }
-
-        .save-btn {
-            width:100%; background:var(--red); color:white;
-            border:none; padding:12px; border-radius:8px; cursor:pointer;
-        }
-
-        /* bands sidebar */
-        .profile-layout {
-            display:flex;
-            gap:32px;
-            flex-direction:row-reverse;
-        }
-
-        .profile-main {
-            flex:1;
-            min-width:0; /* allow carousel to overflow instead of stretching layout */
-        }
-
-        .bands-sidebar {
-            width:250px;
-        }
-
-        .band-card {
-            display:flex;
-            align-items:center;
-            gap:12px;
-            padding:12px;
-            border:1px solid #eee;
-            border-radius:10px;
-            margin-bottom:12px;
-            cursor:pointer;
-        }
-
-        .band-pfp {
-            width:48px; height:48px;
-            border-radius:50%;
-            background:#ccc;
-        }
-
-        /* tags */
-        .pill-container {
-            display:flex;
-            gap: 8px; 
-        }
-    
-        .pill {
-            padding:6px 12px;
-            border-radius:20px;
-            background:#eee;
-            cursor:pointer;
-            user-select:none;
-        }
-
-        .pill:hover { 
-            background: var(--gray); 
-        }
-
-        .pill.active {
-            background:var(--red);
-            color:white;
-        }
-
-        .pill.active:hover { 
-            background: var(--dred); 
-        }
-
-        /* gallery */
-        #gallery {
-            display:grid;
-            grid-template-columns:repeat(3,1fr);
-            gap:12px;
-        }
-        .gallery-item {
-            height:100px;
-            background:#ddd;
-            border-radius:8px;
-        }
-            /* ensure carousel never stretches layout */
-        .posts-carousel-wrapper {
-            max-width:100%;
-            overflow:hidden;
-        }
-        #postCarousel {
-            max-width:100%;
-        }
-</style>
+    <link rel="stylesheet" href="../styles/profile.css">
 </head>
 
 <body>
@@ -388,6 +45,10 @@
     <div class="profile-container">
         <div class="pfp" id="pfpDisplay"></div>
         <input type="file" id="pfpUpload" accept="image/*" style="margin-top:12px;">
+        <div class="name" id="profileName" contenteditable="true">Cool Band</div>
+        <div class="bio" id="profileBio" contenteditable="true">
+            We play indie rock and love collaborating with new artists.
+        </div>          
         
         <div class="name-and-role">
             <div class="name" id="displayName"></div>
@@ -396,8 +57,10 @@
         <div class="stageandlegalname" id="morenames"></div>
         <div class="bio" id="bioText"></div>
 
-        <div class="section-title">Info</div>
-        <div id="roleDetails"></div>
+        <section class="card">
+            <div class="section-title">Info</div>
+            <div id="roleDetails"></div>
+        </section>
 
         <section class="card card--muted">
             <h3 class="section-title">Contact</h3>
@@ -520,6 +183,25 @@
             lucide.createIcons();
         }
 
+        const isOwner = true; // later check auth
+
+        if (!isOwner) {
+            document.querySelectorAll('[contenteditable]').forEach(el => {
+                el.setAttribute('contenteditable', 'false');
+            });
+
+            const pfpUpload = document.getElementById('pfpUpload');
+            if (pfpUpload) pfpUpload.style.display = 'none';
+
+            const addPostBtn = document.getElementById('addPostBtn');
+            if (addPostBtn) addPostBtn.style.display = 'none';
+
+            const galleryUpload = document.getElementById('galleryUpload');
+            if (galleryUpload) galleryUpload.style.display = 'none';
+
+            document.getElementById('tagContainer').classList.add('readonly');
+        }
+
         const menuBtn = document.getElementById('menuBtn');
         const sideMenu = document.getElementById('sideMenu');
 
@@ -532,6 +214,8 @@
         // POSTS loaded from backend
         const POSTS = [];
 
+        let currentEditId = null;
+
         function loadCarousel(){
             const c = document.getElementById('postCarousel');
             c.innerHTML = '';
@@ -539,13 +223,68 @@
             POSTS.forEach(p => {
                 const card = document.createElement('div');
                 card.className = 'post-card';
-                card.onclick = () => location.href = `post.html?id=${p.id}`;
-                card.innerHTML = `<h3>${p.title}</h3><p>${p.desc}</p>`;
+
+                card.innerHTML = `
+                    <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                        <h3>${p.title}</h3>
+                        ${isOwner ? `
+                        <div style="display:flex; gap:6px;">
+                            <span class="edit-btn">✏️</span>
+                            <span class="delete-btn">🗑</span>
+                        </div>` : ''}
+                    </div>
+                    <p>${p.desc}</p>
+                `;
+
+                // card click → post page
+                card.onclick = () => {
+                    location.href = `post.html?id=${p.id}`;
+                };
+
+                // ONLY attach handlers if owner
+                if (isOwner) {
+                    const editBtn = card.querySelector('.edit-btn');
+                    const deleteBtn = card.querySelector('.delete-btn');
+
+                    if (editBtn) {
+                        editBtn.onclick = (e) => {
+                            e.stopPropagation();
+                            openEditModal(p);
+                        };
+                    }
+
+                    if (deleteBtn) {
+                        deleteBtn.onclick = (e) => {
+                            e.stopPropagation();
+                            deletePost(p.id);
+                        };
+                    }
+                }
+
                 c.appendChild(card);
             });
         }
 
+
         loadCarousel();
+
+        function openEditModal(post) {
+            currentEditId = post.id;
+
+            document.getElementById('postTitle').value = post.title;
+            document.getElementById('postDesc').value = post.desc;
+            document.getElementById('postType').value = post.type;
+
+            document.getElementById('modalBg').style.display = 'flex';
+        }
+
+        function deletePost(id) {
+            const index = POSTS.findIndex(p => p.id === id);
+            if (index !== -1) {
+                POSTS.splice(index, 1);
+                loadCarousel();
+            }
+        }
 
         // arrow scrolling
         const postCarousel = document.getElementById('postCarousel');
@@ -558,7 +297,21 @@
         }
 
         const modalBg=document.getElementById('modalBg');
-        document.getElementById('addPostBtn').onclick=()=>{ modalBg.style.display='flex'; };
+        const addPostBtn = document.getElementById('addPostBtn');
+
+        if (isOwner && addPostBtn) {
+            addPostBtn.onclick = () => {
+                currentEditId = null;
+                document.getElementById('postTitle').value = '';
+                document.getElementById('postDesc').value = '';
+                document.getElementById('postType').value = 'gig';
+                modalBg.style.display = 'flex';
+            };
+        } else if (addPostBtn) {
+            addPostBtn.style.display = 'none';
+        }
+
+
         modalBg.onclick=e=>{ if(e.target===modalBg) modalBg.style.display='none'; };
 
         document.getElementById('savePostBtn').onclick = () => {
@@ -566,22 +319,39 @@
             const d = document.getElementById('postDesc').value;
             const type = document.getElementById('postType').value;
 
-            if (!t || !d) return; // simple guard
+            if (!t || !d) return;
 
-            POSTS.push({
-                id: Date.now(),           // unique id
-                title: t,
-                desc: d,
-                type: type,
-                price: '',
-                date: '',
-                location: '',
-                profileName: 'Cool Band'
-            });
+            if (currentEditId) {
+                // EDIT EXISTING POST
+                const post = POSTS.find(p => p.id === currentEditId);
+                if (post) {
+                    post.title = t;
+                    post.desc = d;
+                    post.type = type;
+                }
+            } else {
+                // CREATE NEW POST
+                POSTS.push({
+                    id: Date.now(),
+                    title: t,
+                    desc: d,
+                    type: type,
+                    profileName: 'Cool Band'
+                });
+            }
 
+            currentEditId = null;
             loadCarousel();
-            modalBg.style.display = 'none';
+            document.getElementById('modalBg').style.display = 'none';
         };
+
+        // tag select
+        document.querySelectorAll('#tagContainer .pill').forEach(pill => {
+            if (isOwner) {
+                pill.onclick = () => pill.classList.toggle('active');
+            }
+        });
+
 
         // pfp upload WIP
         const pfpUpload=document.getElementById('pfpUpload');
@@ -596,15 +366,39 @@
         // gallery upload WIP
         const galleryUpload=document.getElementById('galleryUpload');
         const gallery=document.getElementById('gallery');
-        if(galleryUpload) galleryUpload.onchange=e=>{
-            const file=e.target.files[0];
-            if(file){
-                const div=document.createElement('div');
-                div.className='gallery-item';
-                div.style.background=`url(${URL.createObjectURL(file)}) center/cover`;
+
+        if (!isOwner) {
+            const galleryUpload = document.getElementById('galleryUpload');
+            if (galleryUpload) galleryUpload.style.display = 'none';
+
+            document.querySelectorAll('.gallery-delete').forEach(btn => {
+                btn.remove();
+            });
+        }
+
+
+        if (galleryUpload) {
+            galleryUpload.onchange = e => {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                const div = document.createElement('div');
+                div.className = 'gallery-item';
+                div.style.background = `url(${URL.createObjectURL(file)}) center/cover`;
+                div.innerHTML = `<span class="gallery-delete">×</span>`;
+
+                div.querySelector('.gallery-delete').onclick = (ev) => {
+                    ev.stopPropagation();
+                    div.remove();
+                };
+
                 gallery.appendChild(div);
-            }
-        };
+
+                galleryUpload.value = '';
+            };
+        }
+
+
     </script>
 
     <!-- Fill info from db -->
@@ -737,20 +531,29 @@
 
         async function loadProfile() {
             try {
-            const res = await fetch(`/users?username=${encodeURIComponent(username)}`);
-            const data = await res.json();
+                const res = await fetch(`/users?username=${encodeURIComponent(username)}`);
+                const data = await res.json();
 
-            if (!res.ok) {
-                console.error(data);
-                alert(data?.error || "Failed to load profile");
-                return;
+                if (!res.ok) {
+                    console.error(data);
+                    alert(data?.error || "Failed to load profile");
+                    return;
+                }
+
+                renderUser(data);
+                renderRoleIcon(data);
+                renderTags(data);
+                loadPosts(data);
+
+            } catch (err) {
+                console.error(err);
+                alert("Failed to load profile.");
             }
+        }
 
-<<<<<<< Updated upstream
             renderUser(data);
             renderRoleIcon(data);
             renderTags(data); // ✅ call with actual user
-=======
         async function loadPosts(user) {
             try {
                 const res = await fetch(`/posts?userid=${user._id}`);
@@ -763,17 +566,14 @@
 
                 // Expecting an array of posts
                 renderPosts(Array.isArray(data) ? data : []);
->>>>>>> Stashed changes
             } catch (err) {
-            console.error(err);
-            alert("Failed to load profile.");
+                console.error(err);
+                alert("Failed to load posts.");
             }
         }
 
         loadProfile();
     </script>
-
-
 
 </body>
 </html>

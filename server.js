@@ -70,22 +70,22 @@ http.createServer((req, res) => {
             if (!username) return jsonResponse(res, 400, { error: "Missing username" });
 
             manageCollection(res, "users", (res, collection, client) => {
-            collection.findOne({ username }, (err, user) => {
-                if (err) {
-                console.log(`Error querying: ${err}`);
-                client.close();
-                return jsonResponse(res, 500, { error: "Database query error" });
-                }
+                collection.findOne({ username: username }, { passsword: 0 }, (err, user) => {
+                    if (err) {
+                    console.log(`Error querying: ${err}`);
+                    client.close();
+                    return jsonResponse(res, 500, { error: "Database query error" });
+                    }
 
-                if (!user) {
-                client.close();
-                return jsonResponse(res, 404, { error: "No such User Exists" });
-                }
+                    if (!user) {
+                    client.close();
+                    return jsonResponse(res, 404, { error: "No such User Exists" });
+                    }
 
-                const publicUser = toPublicUser(user);
-                client.close();
-                return jsonResponse(res, 200, publicUser);
-            });
+                    const publicUser = toPublicUser(user);
+                    client.close();
+                    return jsonResponse(res, 200, publicUser);
+                });
             });
         //});
 
@@ -154,37 +154,14 @@ http.createServer((req, res) => {
                     client.close();
                 });
             });
-      
         });
 
-<<<<<<< Updated upstream
-=======
     } else if (path === "/posts" && req.method === 'GET') {
-        const qObj = urlObj.parse(req.url, true).query;
-        const idRaw = qObj.userid;
+        const idRaw = urlObj.parse(req.url, true).userid;
         if (!idRaw) return jsonResponse(res, 400, { error: "Bad Request: Missing User ID"});
         const userId = new mongo.ObjectId(idRaw);
-        manageCollection(res, 'posts', (res, collection, client) => {
-            collection.find({ authorId: userId }).toArray((err, posts) => {
-                if(err) {
-                    console.log("Query Error: " + err);
-                    client.close();
-                    return jsonResponse(res, 500, {error: "Database Query Error"});
-                }
-
-                console.log("posts query returned", posts.length, "documents");
-                console.log(posts.map(e => ({
-                    title: e.title,
-                    description: e.description
-                })));
-                
-                jsonResponse(res, 200, posts);
-                client.close();
-            });
-        });
         
-
->>>>>>> Stashed changes
+        
     } else if (path === '/posts/delete' && req.method === 'POST' ) {
         let myFormData = '';
         req.on('data', newData => { myFormData += newData.toString(); });
@@ -271,7 +248,6 @@ http.createServer((req, res) => {
     }
 
 }).listen(PORT);
-
 
 // function to validate and return a post object in the correct format
 
