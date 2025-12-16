@@ -186,11 +186,32 @@
         }
 
         .post-card {
-            flex:0 0 240px; /* fixed width cards so they don't wrap */
-            border:1px solid #eee; border-radius:12px;
-            padding:16px; background:white;
-            cursor:pointer;
+            flex: 0 0 auto;     /* don’t let flex-basis do anything clever */
+            width: 240px;
+            min-width: 240px;
+            max-width: 240px;
+
+            border: 1px solid #eee;
+            border-radius: 12px;
+            padding: 16px;
+            background: white;
+            cursor: pointer;
         }
+
+        .post-card p {
+            display: -webkit-box;
+            -webkit-line-clamp: 2;   /* number of lines to show */
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .post-card h3 {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
         .post-card h3 { font-size:16px; margin-bottom:6px; }
         .post-card p { color:var(--gray); font-size:14px; }
 
@@ -317,7 +338,6 @@
         #postCarousel {
             max-width:100%;
         }
-
         .display-name {
             display: flex;
             align-items: center;
