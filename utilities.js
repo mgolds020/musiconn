@@ -1,8 +1,5 @@
 //requires
 require('dotenv').config();
-const http = require('http');
-const urlObj = require('url');
-const qs = require('querystring'); // parsing for post
 const fs = require('fs');
 const mongo = require('mongodb');
 const jwt = require('jsonwebtoken');

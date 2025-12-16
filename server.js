@@ -54,33 +54,35 @@ http.createServer((req, res) => {
     } else if (path === "/gigs" && req.method === "GET") {
         loadFile("views/gigs.html", res);
 
+    } else if (path === "/profile" && req.method === "GET") {
+        loadFile("views/profile.html", res);
     } else if (path === "/users" && req.method === "GET") {
-
-        authenticateToken(req, res, (tokenPayload) => {
+        //authenticateToken(req, res, () => {
             const qObj = urlObj.parse(req.url, true).query;
-            const username = qObj.username;
-            
-            manageCollection(res, 'users', (res, collection, client) => {
-                collection.findOne( { username: username }, (err, user) => {
-                    if(err) {
-                        console.log(`Error qeurying: ${err}`);
-                        jsonResponse(res, 500, { error: 'Database query error' });
-                        client.close();
-                        return;
-                    }
+            const username = (qObj.username || "").trim();
 
-                    if (!user) {
-                        console.log(`Invalid Post Id`);
-                        jsonResponse(res, 403, { error: 'No such User Exists'});
-                        client.close();
-                        return;
-                    }
+            if (!username) return jsonResponse(res, 400, { error: "Missing username" });
 
-                    jsonResponse(res, 200, user);
-                    client.close();
-                });
+            manageCollection(res, "users", (res, collection, client) => {
+            collection.findOne({ username }, (err, user) => {
+                if (err) {
+                console.log(`Error querying: ${err}`);
+                client.close();
+                return jsonResponse(res, 500, { error: "Database query error" });
+                }
+
+                if (!user) {
+                client.close();
+                return jsonResponse(res, 404, { error: "No such User Exists" });
+                }
+
+                const publicUser = toPublicUser(user);
+                client.close();
+                return jsonResponse(res, 200, publicUser);
             });
-        });
+            });
+        //});
+
 
         // loadFile("views/profile.html", res);
     } else if (path === "/map" && req.method === "GET") {
@@ -154,10 +156,10 @@ http.createServer((req, res) => {
         // end = event when data stops being sent
         req.on('end', () => {
             const parsedData = qs.parse(myFormData);
-            const postId = parsedData.postId;
+            const postId = new mongo.ObjectId(parsedData.postId);
             authenticateToken(req, res, (tokenInfo) => {
                 manageCollection(res, 'posts', (res, collection, client) => {
-                    collection.findOne( { _id: new mongo.ObjectId(postId) }, (err, post) => {
+                    collection.findOne( { _id: postId }, (err, post) => {
 
                         if(err) {
                             console.log(`Error qeurying: ${err}`);
@@ -179,8 +181,8 @@ http.createServer((req, res) => {
                             client.close();
                             return;
                         }
-                        
-                        collection.deleteOne( { _id: new mongo.objectId(postId) }, (err, result) => {
+
+                        collection.deleteOne( { _id: postId }, (err, result) => {
                             if(err) {
                                 console.log(`Error deleting post: ${err}`);
                                 jsonResponse(res, 500, { error: 'Database Delete Error' });
@@ -203,7 +205,7 @@ http.createServer((req, res) => {
         req.on('end', () => {
             const postData = qs.parse(myFormData).post;
 
-            const post = createPostObject(postData);
+            const post = createPostObject(res, postData);
             if (!post) return jsonResponse(res, 400, { error: 'Unable to create post'});
 
             authenticateToken(req, res, (tokenInfo) => {
@@ -238,9 +240,7 @@ http.createServer((req, res) => {
 
 // function to validate and return a post object in the correct format
 
-function createPostObject(post) {
-
-    // data validation
+function createPostObject(res, post) {
 
     // required fields
     const type = String(post?.type ?? '').trim();
@@ -249,27 +249,27 @@ function createPostObject(post) {
     const latitude = Number(post?.latitude);
     const longitude = Number(post?.longitude);
 
-
+    // validation on required fields
     const allowedTypes = new Set(['gig', 'event', 'lesson']);
 
     if (!allowedTypes.has(type)) {
         jsonResponse(res, 400, { error: 'Invalid type', allowed: Array.from(allowedTypes) });
-        return;
+        return null;
     }
     if (!title){
         jsonResponse(res, 400, { error: 'Missing title' });
-        return;
+        return null;
     };
     if (!description){ 
         jsonResponse(res, 400, { error: 'Missing description' });
-        return;
+        return null;
     };
     if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
         jsonResponse(res, 400, { error: 'Invalid latitude/longitude' });
-        return;
+        return null;
     }
 
-    // Optional fields - set null if they were not posted
+    // Optional fields - set null if not POSTed
     const address = post?.address ? String(post.address).trim() : '';
     const priceLowBound = post?.priceLowBound != null ? Number(post.priceLowBound) : null;
     const priceHighBound = post?.priceHighBound != null ? Number(post.priceHighBound) : null;
@@ -279,7 +279,7 @@ function createPostObject(post) {
 
     if (post?.eventDate && isNaN(eventDate.getTime())) {
         jsonResponse(res, 400, { error: 'Invalid eventDate' });
-        return;
+        return null;
     }
 
     const newPost = {
@@ -301,3 +301,43 @@ function createPostObject(post) {
     return newPost;
 }
 
+function toPublicUser(user) {
+  if (!user) return null;
+
+  const base = {
+    _id: user._id?.toString?.() ?? user._id,
+    username: user.username ?? "",
+    role: user.role ?? "listener",
+    bio: user.bio ?? "",
+    contactInfo: {
+      email: user?.contactInfo?.email ?? "",
+    },
+    createdAt: user.createdAt ?? null,
+  };
+
+  if (base.role === "artist" && user.artistProfile) {
+    base.artistProfile = {
+      legalName: user.artistProfile.legalName ?? "",
+      stageName: user.artistProfile.stageName ?? "",
+      isInstructor: !!user.artistProfile.isInstructor,
+      genres: Array.isArray(user.artistProfile.genres) ? user.artistProfile.genres : [],
+      media: Array.isArray(user.artistProfile.media) ? user.artistProfile.media : [],
+      instrument: user.artistProfile.instrument ?? "",
+      status: user.artistProfile.status ?? "",
+    };
+  }
+
+  if (base.role === "band" && user.bandProfile) {
+    base.bandProfile = {
+      name: user.bandProfile.name ?? "",
+      genres: Array.isArray(user.bandProfile.genres) ? user.bandProfile.genres : [],
+      members: Array.isArray(user.bandProfile.members) ? user.bandProfile.members : [],
+      media: Array.isArray(user.bandProfile.media) ? user.bandProfile.media : [],
+      status: user.bandProfile.status ?? "",
+      admins: Array.isArray(user.bandProfile.admins) ? user.bandProfile.admins : [],
+    };
+  }
+
+  // listener: no artistProfile/bandProfile attached
+  return base;
+}
