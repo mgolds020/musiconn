@@ -43,19 +43,25 @@ http.createServer((req, res) => {
     }
 
     if (path === "/" && req.method === "GET") {
+
         loadFile("views/map.html", res);
 
     } else if (path === "/login" && req.method === "GET") {
+
         loadFile("views/login.html", res);
 
     } else if (path === "/signup" && req.method === "GET") {
+
         loadFile("views/signup.html", res);
 
     } else if (path === "/gigs" && req.method === "GET") {
+
         loadFile("views/gigs.html", res);
 
     } else if (path === "/profile" && req.method === "GET") {
+
         loadFile("views/profile.html", res);
+
     } else if (path === "/users" && req.method === "GET") {
         //authenticateToken(req, res, () => {
             const qObj = urlObj.parse(req.url, true).query;
@@ -88,6 +94,7 @@ http.createServer((req, res) => {
     } else if (path === "/map" && req.method === "GET") {
         loadFile("views/map.html", res);
     } else if (path === "/posts" && req.method === "POST") {
+        
         let myFormData = '';
         req.on('data', newData => { myFormData += newData.toString(); });
         // end = event when data stops being sent
@@ -150,6 +157,34 @@ http.createServer((req, res) => {
       
         });
 
+<<<<<<< Updated upstream
+=======
+    } else if (path === "/posts" && req.method === 'GET') {
+        const qObj = urlObj.parse(req.url, true).query;
+        const idRaw = qObj.userid;
+        if (!idRaw) return jsonResponse(res, 400, { error: "Bad Request: Missing User ID"});
+        const userId = new mongo.ObjectId(idRaw);
+        manageCollection(res, 'posts', (res, collection, client) => {
+            collection.find({ authorId: userId }).toArray((err, posts) => {
+                if(err) {
+                    console.log("Query Error: " + err);
+                    client.close();
+                    return jsonResponse(res, 500, {error: "Database Query Error"});
+                }
+
+                console.log("posts query returned", posts.length, "documents");
+                console.log(posts.map(e => ({
+                    title: e.title,
+                    description: e.description
+                })));
+                
+                jsonResponse(res, 200, posts);
+                client.close();
+            });
+        });
+        
+
+>>>>>>> Stashed changes
     } else if (path === '/posts/delete' && req.method === 'POST' ) {
         let myFormData = '';
         req.on('data', newData => { myFormData += newData.toString(); });
@@ -305,7 +340,7 @@ function toPublicUser(user) {
   if (!user) return null;
 
   const base = {
-    _id: user._id?.toString?.() ?? user._id,
+    _id: user._id.toString?.(), // Potentially put back ?:??id  
     username: user.username ?? "",
     role: user.role ?? "listener",
     bio: user.bio ?? "",

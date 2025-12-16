@@ -529,40 +529,8 @@
             });
         }
 
-
-        // MOCK POSTS
-        const POSTS = [
-            {
-                id: 1,
-                type: 'gig',
-                title: 'Looking for a drummer',
-                desc: 'We need an experienced drummer for a Friday night paid show.',
-                price: '$150-$250',
-                date: 'Feb 12, 2026 @ 8:00 PM',
-                location: 'Boston, MA',
-                profileName: 'Cool Band'
-            },
-            {
-                id: 2,
-                type: 'gig',
-                title: 'Jazz pianist wanted',
-                desc: 'Weekly restaurant residency.',
-                price: '$200-$300',
-                date: 'Every Friday @ 7 PM',
-                location: 'Cambridge, MA',
-                profileName: 'Jazz Collective'
-            },
-            {
-                id: 3,
-                type: 'learn',
-                title: 'Guitar lessons',
-                desc: 'Beginner-friendly private lessons.',
-                price: '$40/hr',
-                date: 'Flexible',
-                location: 'Online / Boston',
-                profileName: 'Alex'
-            }
-        ];
+        // POSTS loaded from backend
+        const POSTS = [];
 
         function loadCarousel(){
             const c = document.getElementById('postCarousel');
@@ -753,6 +721,20 @@
             lucide.createIcons();
         }
 
+        function renderPosts(postsFromServer) {
+            POSTS.length = 0; // clear existing posts
+
+            postsFromServer.forEach(p => {
+                POSTS.push({
+                    id: p._id,
+                    title: p.title || "(untitled)",
+                    desc: p.description || ""
+                });
+            });
+
+            loadCarousel();
+        }
+
         async function loadProfile() {
             try {
             const res = await fetch(`/users?username=${encodeURIComponent(username)}`);
@@ -764,9 +746,24 @@
                 return;
             }
 
+<<<<<<< Updated upstream
             renderUser(data);
             renderRoleIcon(data);
             renderTags(data); // ✅ call with actual user
+=======
+        async function loadPosts(user) {
+            try {
+                const res = await fetch(`/posts?userid=${user._id}`);
+                const data = await res.json();
+
+                if (!res.ok) {
+                    console.error(data);
+                    return;
+                }
+
+                // Expecting an array of posts
+                renderPosts(Array.isArray(data) ? data : []);
+>>>>>>> Stashed changes
             } catch (err) {
             console.error(err);
             alert("Failed to load profile.");
