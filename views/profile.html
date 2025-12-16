@@ -199,11 +199,32 @@
         }
 
         .post-card {
-            flex:0 0 240px; /* fixed width cards so they don't wrap */
-            border:1px solid #eee; border-radius:12px;
-            padding:16px; background:white;
-            cursor:pointer;
+            flex: 0 0 auto;     /* don’t let flex-basis do anything clever */
+            width: 240px;
+            min-width: 240px;
+            max-width: 240px;
+
+            border: 1px solid #eee;
+            border-radius: 12px;
+            padding: 16px;
+            background: white;
+            cursor: pointer;
         }
+
+        .post-card p {
+            display: -webkit-box;
+            -webkit-line-clamp: 2;   /* number of lines to show */
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .post-card h3 {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
         .post-card h3 { font-size:16px; margin-bottom:6px; }
         .post-card p { color:var(--gray); font-size:14px; }
 
@@ -337,7 +358,7 @@
 
     <header>
         <i data-lucide="menu" class="icon-btn" id="menuBtn"></i>
-        <h1 onclick="location.href='gigs.html'">Musiconn</h1>
+        <h1 onclick="location.href='gigs.html?view=gig'">Musiconn</h1> <!-- make this go to map view -->
         <i data-lucide="user" class="icon-btn"></i>
     </header>
 
@@ -403,17 +424,18 @@
 
                 <div class="section-title">Posts</div>
 
-<!-- FIXED-WIDTH CAROUSEL WRAPPER -->
-<div class="posts-carousel-wrapper" style="position:relative; width:100%; overflow:hidden;">
+                <!-- FIXED-WIDTH CAROUSEL -->
+                <div class="posts-carousel-wrapper" style="position:relative; width:100%; overflow:hidden;">
 
-  <button class="posts-arrow left" id="postsLeft" style="position:absolute; left:0; top:50%; transform:translateY(-50%); border-radius:999px; border:1px solid #ddd; background:white; padding:6px 12px; box-shadow:0 2px 6px rgba(0,0,0,0.15); cursor:pointer; z-index:5;">◀</button>
+                    <button class="posts-arrow left" id="postsLeft" style="position:absolute; left:0; top:50%; transform:translateY(-50%); border-radius:999px; border:1px solid #ddd; background:white; padding:6px 12px; box-shadow:0 2px 6px rgba(0,0,0,0.15); cursor:pointer; z-index:5;">◀</button>
+                    <div class="carousel" id="postCarousel"
+                    style="display:flex; flex-wrap:nowrap; gap:16px; overflow-x:auto; overflow-y:hidden;
+                            scroll-behavior:smooth; white-space:nowrap;
+                            padding:10px 48px; min-width:0;"></div>
+                    <button class="posts-arrow right" id="postsRight" style="position:absolute; right:0; top:50%; transform:translateY(-50%); border-radius:999px; border:1px solid #ddd; background:white; padding:6px 12px; box-shadow:0 2px 6px rgba(0,0,0,0.15); cursor:pointer; z-index:5;">▶</button>
+                </div>
 
-  <div class="carousel" id="postCarousel" style="display:flex; flex-wrap:nowrap; gap:16px; overflow-x:auto; overflow-y:hidden; scroll-behavior:smooth; white-space:nowrap; padding:10px 0; min-width:0;"></div>
-
-  <button class="posts-arrow right" id="postsRight" style="position:absolute; right:0; top:50%; transform:translateY(-50%); border-radius:999px; border:1px solid #ddd; background:white; padding:6px 12px; box-shadow:0 2px 6px rgba(0,0,0,0.15); cursor:pointer; z-index:5;">▶</button>
-</div>
-
-<div class="section-title">Gallery</div>
+                <div class="section-title">Gallery</div>
                 <div id="gallery">
                     <!-- upload photos to populate -->
                 </div>
@@ -488,20 +510,48 @@
 
 
         // MOCK POSTS
-        const posts=[
-            {title:'Looking for drummer', desc:'Friday gig', type:'gig'},
-            {title:'Jazz pianist wanted', desc:'Weekly residency', type:'gig'},
-            {title:'Guitar lessons', desc:'Beginner friendly', type:'learn'}
+        const POSTS = [
+            {
+                id: 1,
+                type: 'gig',
+                title: 'Looking for a drummer',
+                desc: 'We need an experienced drummer for a Friday night paid show.',
+                price: '$150-$250',
+                date: 'Feb 12, 2026 @ 8:00 PM',
+                location: 'Boston, MA',
+                profileName: 'Cool Band'
+            },
+            {
+                id: 2,
+                type: 'gig',
+                title: 'Jazz pianist wanted',
+                desc: 'Weekly restaurant residency.',
+                price: '$200-$300',
+                date: 'Every Friday @ 7 PM',
+                location: 'Cambridge, MA',
+                profileName: 'Jazz Collective'
+            },
+            {
+                id: 3,
+                type: 'learn',
+                title: 'Guitar lessons',
+                desc: 'Beginner-friendly private lessons.',
+                price: '$40/hr',
+                date: 'Flexible',
+                location: 'Online / Boston',
+                profileName: 'Alex'
+            }
         ];
 
         function loadCarousel(){
-            const c=document.getElementById('postCarousel');
-            c.innerHTML='';
-            posts.forEach(p=>{
-                const card=document.createElement('div');
-                card.className='post-card';
-                card.onclick=()=>location.href='post.html'; // change to go to actual post page
-                card.innerHTML=`<h3>${p.title}</h3><p>${p.desc}</p>`;
+            const c = document.getElementById('postCarousel');
+            c.innerHTML = '';
+
+            POSTS.forEach(p => {
+                const card = document.createElement('div');
+                card.className = 'post-card';
+                card.onclick = () => location.href = `post.html?id=${p.id}`;
+                card.innerHTML = `<h3>${p.title}</h3><p>${p.desc}</p>`;
                 c.appendChild(card);
             });
         }
@@ -522,14 +572,26 @@
         document.getElementById('addPostBtn').onclick=()=>{ modalBg.style.display='flex'; };
         modalBg.onclick=e=>{ if(e.target===modalBg) modalBg.style.display='none'; };
 
-        document.getElementById('savePostBtn').onclick=()=>{
-            const t=document.getElementById('postTitle').value;
-            const d=document.getElementById('postDesc').value;
-            const type=document.getElementById('postType').value;
+        document.getElementById('savePostBtn').onclick = () => {
+            const t = document.getElementById('postTitle').value;
+            const d = document.getElementById('postDesc').value;
+            const type = document.getElementById('postType').value;
 
-            posts.push({title:t, desc:d, type:type});
+            if (!t || !d) return; // simple guard
+
+            POSTS.push({
+                id: Date.now(),           // unique id
+                title: t,
+                desc: d,
+                type: type,
+                price: '',
+                date: '',
+                location: '',
+                profileName: 'Cool Band'
+            });
+
             loadCarousel();
-            modalBg.style.display='none';
+            modalBg.style.display = 'none';
         };
 
         // tag select
