@@ -9,6 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
 
+    <link rel="stylesheet" href="/styles/profile.css">
     <style>
         :root {
             --red:#e63946;
@@ -387,8 +388,29 @@
     <div class="profile-container">
         <div class="pfp" id="pfpDisplay"></div>
         <input type="file" id="pfpUpload" accept="image/*" style="margin-top:12px;">
-        <div class="name">Cool Band</div>
-        <div class="bio">We play indie rock and love collaborating with new artists.</div>
+        
+        <div class="name-and-role">
+            <div class="name" id="displayName"></div>
+            <i id="roleIcon" class="role-icon"></i>
+        </div>
+        <div class="stageandlegalname" id="morenames"></div>
+        <div class="bio" id="bioText"></div>
+
+        <div class="section-title">Info</div>
+        <div id="roleDetails"></div>
+
+        <section class="card card--muted">
+            <h3 class="section-title">Contact</h3>
+            <dl class="kv">
+                <div class="kv-row">
+                <dt>Name</dt><dd id="legalNameText"></dd>
+                </div>
+                <div class="kv-row">
+                <dt>Email</dt><dd id="emailText"></dd>
+                </div>
+            </dl>
+        </section>
+
 
         <div class="profile-layout">
             <!-- bands sidebar -->
@@ -411,17 +433,16 @@
                         </div>
                     </div>
                 </div>
+                <div class="section-title" id="tagsTitle">Tags</div>
+                <div class="pill-container" id="tagContainer">
+                    <span class="pill">Trumpet</span>
+                    <span class="pill">Pop</span>
+                    <span class="pill">R&B</span>
+                </div>
             </div>
 
             <!-- main profile -->
             <div class="profile-main">
-                <div class="section-title">Tags</div>
-                <div class="pill-container" id="tagContainer">
-                    <span class="pill">Guitar</span>
-                    <span class="pill">Rock</span>
-                    <span class="pill">Indie</span>
-                </div>
-
                 <div class="section-title">Posts</div>
 
                 <!-- FIXED-WIDTH CAROUSEL -->
@@ -594,11 +615,6 @@
             modalBg.style.display = 'none';
         };
 
-        // tag select
-        document.querySelectorAll('#tagContainer .pill').forEach(p=>{
-            p.onclick=()=>p.classList.toggle('active');
-        });
-
         // pfp upload WIP
         const pfpUpload=document.getElementById('pfpUpload');
         const pfpDisplay=document.getElementById('pfpDisplay');
@@ -622,5 +638,145 @@
             }
         };
     </script>
+
+    <!-- Fill info from db -->
+    <script>
+        // read ?username=
+        const params = new URLSearchParams(window.location.search);
+        const username = (params.get("username") || "").trim();
+
+        if (!username) {
+            alert("Missing username in URL. Use /profile?username=someUser");
+        }
+
+        // Helper: safely set text
+        function setText(id, value) {
+            const el = document.getElementById(id);
+            if (el) el.textContent = value ?? "";
+        }
+
+        function capitalize(str) {
+            if (!str) return "";
+            return str.charAt(0).toUpperCase() + str.slice(1);
+        }
+
+        function renderUser(u) {
+            // Base fields
+            setText("displayName", u.username);
+            setText("bioText", u.bio || "");
+            setText("emailText", u?.contactInfo?.email || "");
+        
+            const roleBox = document.getElementById("roleDetails");
+            if (roleBox) roleBox.innerHTML = "";
+
+            if (u.role === "artist" && u.artistProfile) {
+                setText("legalNameText", u.artistProfile.legalName);
+                setText("displayName", u.artistProfile.stageName)
+
+                if (roleBox) roleBox.innerHTML = `
+                    <div><strong>Status:</strong> ${u.artistProfile.status || ""}</div>
+                    <div><strong>Instructor:</strong> ${u.artistProfile.isInstructor ? "Yes" : "No"}</div>
+                `;
+            } else if (u.role === "band" && u.bandProfile) {
+            // Use band name as main display name
+            setText("displayName", u.bandProfile.name || u.username);
+
+            if (roleBox) roleBox.innerHTML = `
+                <div><strong>Band status:</strong> ${u.bandProfile.status || ""}</div>
+                <div><strong>Genres:</strong> ${(u.bandProfile.genres || []).join(", ")}</div>
+                <div><strong>Members:</strong> ${(u.bandProfile.members || []).length}</div>
+            `;
+            } else {
+            if (roleBox) roleBox.innerHTML = `<div>This user is a listener.</div>`;
+            }
+        }
+
+        function addTag(tagContainer, label) {
+            const span = document.createElement("span");
+            span.className = "pill";
+            span.textContent = label;
+            tagContainer.appendChild(span);
+        }
+
+        function renderTags(user) {
+            const tagContainer = document.getElementById("tagContainer");
+            const tagsTitle = document.getElementById("tagsTitle");
+
+            if (!tagContainer || !tagsTitle) return;
+
+            tagContainer.innerHTML = "";
+
+            // Listener → hide tags entirely
+            if (!user || user.role === "listener") {
+            tagsTitle.style.display = "none";
+            tagContainer.style.display = "none";
+            return;
+            }
+
+            tagsTitle.style.display = "block";
+            tagContainer.style.display = "flex";
+
+            // Artist: instrument first, then genres
+            if (user.role === "artist" && user.artistProfile) {
+            if (user.artistProfile.instrument) {
+                addTag(tagContainer, capitalize(user.artistProfile.instrument));
+            }
+            (user.artistProfile.genres || []).forEach(g =>
+                addTag(tagContainer, capitalize(g))
+            );
+            }
+
+            // Band: genres only
+            if (user.role === "band" && user.bandProfile) {
+            (user.bandProfile.genres || []).forEach(g =>
+                addTag(tagContainer, capitalize(g))
+            );
+            }
+
+            if (!tagContainer.children.length) addTag(tagContainer, "No tags");
+        }
+
+        function renderRoleIcon(user) {
+            const iconEl = document.getElementById("roleIcon");
+            if (!iconEl || !user?.role) return;
+
+            const roleToIcon = {
+                artist: "mic-vocal",
+                band: "guitar",
+                listener: "headphones"
+            };
+
+            const iconName = roleToIcon[user.role];
+            if (!iconName) return;
+
+            iconEl.setAttribute("data-lucide", iconName);
+            lucide.createIcons();
+        }
+
+        async function loadProfile() {
+            try {
+            const res = await fetch(`/users?username=${encodeURIComponent(username)}`);
+            const data = await res.json();
+
+            if (!res.ok) {
+                console.error(data);
+                alert(data?.error || "Failed to load profile");
+                return;
+            }
+
+            renderUser(data);
+            renderRoleIcon(data);
+            renderTags(data); // ✅ call with actual user
+            } catch (err) {
+            console.error(err);
+            alert("Failed to load profile.");
+            }
+        }
+
+        loadProfile();
+    </script>
+
+
+
 </body>
 </html>

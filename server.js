@@ -54,33 +54,35 @@ http.createServer((req, res) => {
     } else if (path === "/gigs" && req.method === "GET") {
         loadFile("views/gigs.html", res);
 
+    } else if (path === "/profile" && req.method === "GET") {
+        loadFile("views/profile.html", res);
     } else if (path === "/users" && req.method === "GET") {
-
-        authenticateToken(req, res, (tokenPayload) => {
+        //authenticateToken(req, res, () => {
             const qObj = urlObj.parse(req.url, true).query;
-            const username = qObj.username;
-            
-            manageCollection(res, 'users', (res, collection, client) => {
-                collection.findOne( { username: username }, (err, user) => {
-                    if(err) {
-                        console.log(`Error qeurying: ${err}`);
-                        jsonResponse(res, 500, { error: 'Database query error' });
-                        client.close();
-                        return;
-                    }
+            const username = (qObj.username || "").trim();
 
-                    if (!user) {
-                        console.log(`Invalid Post Id`);
-                        jsonResponse(res, 403, { error: 'No such User Exists'});
-                        client.close();
-                        return;
-                    }
+            if (!username) return jsonResponse(res, 400, { error: "Missing username" });
 
-                    jsonResponse(res, 200, user);
-                    client.close();
-                });
+            manageCollection(res, "users", (res, collection, client) => {
+            collection.findOne({ username }, (err, user) => {
+                if (err) {
+                console.log(`Error querying: ${err}`);
+                client.close();
+                return jsonResponse(res, 500, { error: "Database query error" });
+                }
+
+                if (!user) {
+                client.close();
+                return jsonResponse(res, 404, { error: "No such User Exists" });
+                }
+
+                const publicUser = toPublicUser(user);
+                client.close();
+                return jsonResponse(res, 200, publicUser);
             });
-        });
+            });
+        //});
+
 
         // loadFile("views/profile.html", res);
     } else if (path === "/map" && req.method === "GET") {
@@ -299,3 +301,43 @@ function createPostObject(res, post) {
     return newPost;
 }
 
+function toPublicUser(user) {
+  if (!user) return null;
+
+  const base = {
+    _id: user._id?.toString?.() ?? user._id,
+    username: user.username ?? "",
+    role: user.role ?? "listener",
+    bio: user.bio ?? "",
+    contactInfo: {
+      email: user?.contactInfo?.email ?? "",
+    },
+    createdAt: user.createdAt ?? null,
+  };
+
+  if (base.role === "artist" && user.artistProfile) {
+    base.artistProfile = {
+      legalName: user.artistProfile.legalName ?? "",
+      stageName: user.artistProfile.stageName ?? "",
+      isInstructor: !!user.artistProfile.isInstructor,
+      genres: Array.isArray(user.artistProfile.genres) ? user.artistProfile.genres : [],
+      media: Array.isArray(user.artistProfile.media) ? user.artistProfile.media : [],
+      instrument: user.artistProfile.instrument ?? "",
+      status: user.artistProfile.status ?? "",
+    };
+  }
+
+  if (base.role === "band" && user.bandProfile) {
+    base.bandProfile = {
+      name: user.bandProfile.name ?? "",
+      genres: Array.isArray(user.bandProfile.genres) ? user.bandProfile.genres : [],
+      members: Array.isArray(user.bandProfile.members) ? user.bandProfile.members : [],
+      media: Array.isArray(user.bandProfile.media) ? user.bandProfile.media : [],
+      status: user.bandProfile.status ?? "",
+      admins: Array.isArray(user.bandProfile.admins) ? user.bandProfile.admins : [],
+    };
+  }
+
+  // listener: no artistProfile/bandProfile attached
+  return base;
+}
