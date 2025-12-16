@@ -57,8 +57,10 @@
         <div class="stageandlegalname" id="morenames"></div>
         <div class="bio" id="bioText"></div>
 
-        <div class="section-title">Info</div>
-        <div id="roleDetails"></div>
+        <section class="card">
+            <div class="section-title">Info</div>
+            <div id="roleDetails"></div>
+        </section>
 
         <section class="card card--muted">
             <h3 class="section-title">Contact</h3>
@@ -547,21 +549,33 @@
 
         async function loadProfile() {
             try {
-            const res = await fetch(`/users?username=${encodeURIComponent(username)}`);
-            const data = await res.json();
+                const res = await fetch(`/users?username=${encodeURIComponent(username)}`);
+                const data = await res.json();
 
-            if (!res.ok) {
-                console.error(data);
-                alert(data?.error || "Failed to load profile");
-                return;
-            }
+                if (!res.ok) {
+                    console.error(data);
+                    alert(data?.error || "Failed to load profile");
+                    return;
+                }
 
-            renderUser(data);
-            renderRoleIcon(data);
-            renderTags(data); // ✅ call with actual user
+                renderUser(data);
+                renderRoleIcon(data);
+                renderTags(data);
+                loadPosts(data);
+
             } catch (err) {
-            console.error(err);
-            alert("Failed to load profile.");
+                console.error(err);
+                alert("Failed to load profile.");
+            }
+        }
+
+        async function loadPosts(user) {
+            try {
+                const res = await fetch(`/posts?userid=${user._id}`);
+                const data = await res.json();
+            } catch (err) {
+                console.error(err);
+                alert("Failed to load posts.");
             }
         }
 

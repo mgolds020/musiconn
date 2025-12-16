@@ -64,22 +64,22 @@ http.createServer((req, res) => {
             if (!username) return jsonResponse(res, 400, { error: "Missing username" });
 
             manageCollection(res, "users", (res, collection, client) => {
-            collection.findOne({ username }, (err, user) => {
-                if (err) {
-                console.log(`Error querying: ${err}`);
-                client.close();
-                return jsonResponse(res, 500, { error: "Database query error" });
-                }
+                collection.findOne({ username: username }, { passsword: 0 }, (err, user) => {
+                    if (err) {
+                    console.log(`Error querying: ${err}`);
+                    client.close();
+                    return jsonResponse(res, 500, { error: "Database query error" });
+                    }
 
-                if (!user) {
-                client.close();
-                return jsonResponse(res, 404, { error: "No such User Exists" });
-                }
+                    if (!user) {
+                    client.close();
+                    return jsonResponse(res, 404, { error: "No such User Exists" });
+                    }
 
-                const publicUser = toPublicUser(user);
-                client.close();
-                return jsonResponse(res, 200, publicUser);
-            });
+                    const publicUser = toPublicUser(user);
+                    client.close();
+                    return jsonResponse(res, 200, publicUser);
+                });
             });
         //});
 
@@ -147,8 +147,14 @@ http.createServer((req, res) => {
                     client.close();
                 });
             });
-      
         });
+
+    } else if (path === "/posts" && req.method === 'GET') {
+        const idRaw = urlObj.parse(req.url, true).userid;
+        if (!idRaw) return jsonResponse(res, 400, { error: "Bad Request: Missing User ID"});
+        const userId = new mongo.ObjectId(idRaw);
+        
+        
 
     } else if (path === '/posts/delete' && req.method === 'POST' ) {
         let myFormData = '';
@@ -236,7 +242,6 @@ http.createServer((req, res) => {
     }
 
 }).listen(PORT);
-
 
 // function to validate and return a post object in the correct format
 
