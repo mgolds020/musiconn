@@ -154,10 +154,10 @@ http.createServer((req, res) => {
         // end = event when data stops being sent
         req.on('end', () => {
             const parsedData = qs.parse(myFormData);
-            const postId = parsedData.postId;
+            const postId = new mongo.ObjectId(parsedData.postId);
             authenticateToken(req, res, (tokenInfo) => {
                 manageCollection(res, 'posts', (res, collection, client) => {
-                    collection.findOne( { _id: new mongo.ObjectId(postId) }, (err, post) => {
+                    collection.findOne( { _id: postId }, (err, post) => {
 
                         if(err) {
                             console.log(`Error qeurying: ${err}`);
@@ -179,8 +179,8 @@ http.createServer((req, res) => {
                             client.close();
                             return;
                         }
-                        
-                        collection.deleteOne( { _id: new mongo.objectId(postId) }, (err, result) => {
+
+                        collection.deleteOne( { _id: postId }, (err, result) => {
                             if(err) {
                                 console.log(`Error deleting post: ${err}`);
                                 jsonResponse(res, 500, { error: 'Database Delete Error' });
@@ -203,7 +203,7 @@ http.createServer((req, res) => {
         req.on('end', () => {
             const postData = qs.parse(myFormData).post;
 
-            const post = createPostObject(postData);
+            const post = createPostObject(res, postData);
             if (!post) return jsonResponse(res, 400, { error: 'Unable to create post'});
 
             authenticateToken(req, res, (tokenInfo) => {
@@ -238,9 +238,7 @@ http.createServer((req, res) => {
 
 // function to validate and return a post object in the correct format
 
-function createPostObject(post) {
-
-    // data validation
+function createPostObject(res, post) {
 
     // required fields
     const type = String(post?.type ?? '').trim();
@@ -249,27 +247,27 @@ function createPostObject(post) {
     const latitude = Number(post?.latitude);
     const longitude = Number(post?.longitude);
 
-
+    // validation on required fields
     const allowedTypes = new Set(['gig', 'event', 'lesson']);
 
     if (!allowedTypes.has(type)) {
         jsonResponse(res, 400, { error: 'Invalid type', allowed: Array.from(allowedTypes) });
-        return;
+        return null;
     }
     if (!title){
         jsonResponse(res, 400, { error: 'Missing title' });
-        return;
+        return null;
     };
     if (!description){ 
         jsonResponse(res, 400, { error: 'Missing description' });
-        return;
+        return null;
     };
     if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
         jsonResponse(res, 400, { error: 'Invalid latitude/longitude' });
-        return;
+        return null;
     }
 
-    // Optional fields - set null if they were not posted
+    // Optional fields - set null if not POSTed
     const address = post?.address ? String(post.address).trim() : '';
     const priceLowBound = post?.priceLowBound != null ? Number(post.priceLowBound) : null;
     const priceHighBound = post?.priceHighBound != null ? Number(post.priceHighBound) : null;
@@ -279,7 +277,7 @@ function createPostObject(post) {
 
     if (post?.eventDate && isNaN(eventDate.getTime())) {
         jsonResponse(res, 400, { error: 'Invalid eventDate' });
-        return;
+        return null;
     }
 
     const newPost = {
