@@ -44,11 +44,6 @@
 
     <div class="profile-container">
         <div class="pfp" id="pfpDisplay"></div>
-        <input type="file" id="pfpUpload" accept="image/*" style="margin-top:12px;">
-        <div class="name" id="profileName" contenteditable="true">Cool Band</div>
-        <div class="bio" id="profileBio" contenteditable="true">
-            We play indie rock and love collaborating with new artists.
-        </div>          
         
         <div class="name-and-role">
             <div class="name" id="displayName"></div>
@@ -550,10 +545,7 @@
                 alert("Failed to load profile.");
             }
         }
-
-            renderUser(data);
-            renderRoleIcon(data);
-            renderTags(data); // ✅ call with actual user
+        
         async function loadPosts(user) {
             try {
                 const res = await fetch(`/posts?userid=${user._id}`);

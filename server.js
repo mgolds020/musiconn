@@ -157,9 +157,30 @@ http.createServer((req, res) => {
         });
 
     } else if (path === "/posts" && req.method === 'GET') {
-        const idRaw = urlObj.parse(req.url, true).userid;
+
+        const qObj = urlObj.parse(req.url, true).query;
+        const idRaw = qObj.userid;
         if (!idRaw) return jsonResponse(res, 400, { error: "Bad Request: Missing User ID"});
         const userId = new mongo.ObjectId(idRaw);
+        manageCollection(res, 'posts', (res, collection, client) => {
+            collection.find({ authorId: userId }).toArray((err, posts) => {
+                if(err) {
+                    console.log("Query Error: " + err);
+                    client.close();
+                    return jsonResponse(res, 500, {error: "Database Query Error"});
+                }
+
+                console.log("posts query returned", posts.length, "documents");
+                console.log(posts.map(e => ({
+                    title: e.title,
+                    description: e.description
+                })));
+                
+                jsonResponse(res, 200, posts);
+                client.close();
+            });
+        });
+        
         
         
     } else if (path === '/posts/delete' && req.method === 'POST' ) {

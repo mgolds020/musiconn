@@ -185,7 +185,7 @@ color: var(--red);
 
 .section-title {
     font-size:18px; font-weight:600;
-    margin:32px 0 12px;
+    margin:0 0 12px;
 }
 
 /* posts carousel */
@@ -406,7 +406,7 @@ textarea { height:90px; resize:none; }
 
         .name-and-role{
             display:flex;
-            align-items: baseline;   /* baseline is usually the “looks centered” fix for text+icon */
+            align-items: baseline;   
             gap:10px;
             margin-top:12px;
         }
@@ -414,8 +414,8 @@ textarea { height:90px; resize:none; }
         .name{
             font-size: 28px;
             font-weight: 700;
-            line-height: 1.1;        /* important: controls baseline + vertical rhythm */
-            margin: 0;               /* kill margin-top here; let the wrapper control spacing */
+            line-height: 1.1;
+            margin: 0;             
         }
 
         .role-icon{
@@ -423,7 +423,7 @@ textarea { height:90px; resize:none; }
             height: 20px;
             color: var(--gray);
             position: relative;
-            top: 2px;                /* tiny nudge down; adjust 1–3px if needed */
+            top: 2px;              
         }
 
         .card{
