@@ -185,7 +185,7 @@ color: var(--red);
 
 .section-title {
     font-size:18px; font-weight:600;
-    margin:0 0 12px;
+    margin:12px 0 12px;
 }
 
 /* posts carousel */
@@ -462,3 +462,31 @@ textarea { height:90px; resize:none; }
           font-size: 14px;
           font-weight: 600;
         }
+
+        .role-pfp {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--light);
+}
+
+/* Bigger icon for avatar */
+.role-pfp .role-icon {
+    width: 48px;
+    height: 48px;
+    color: var(--gray);
+}
+
+/* Slight visual distinction by role (optional but nice) */
+.role-pfp.artist {
+    background: rgba(230, 57, 70, 0.12);
+    color: var(--red);
+}
+
+.role-pfp.band {
+    background: rgba(17, 17, 17, 0.08);
+}
+
+.role-pfp.listener {
+    background: rgba(102, 102, 102, 0.12);
+}

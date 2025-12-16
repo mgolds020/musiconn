@@ -343,6 +343,7 @@ function toPublicUser(user) {
     bio: user.bio ?? "",
     contactInfo: {
       email: user?.contactInfo?.email ?? "",
+      name: user?.contactInfo?.name ?? "",
     },
     createdAt: user.createdAt ?? null,
   };
@@ -363,7 +364,7 @@ function toPublicUser(user) {
     base.bandProfile = {
       name: user.bandProfile.name ?? "",
       genres: Array.isArray(user.bandProfile.genres) ? user.bandProfile.genres : [],
-      members: Array.isArray(user.bandProfile.members) ? user.bandProfile.members : [],
+      members: user.bandProfile.members ?? 0,
       media: Array.isArray(user.bandProfile.media) ? user.bandProfile.media : [],
       status: user.bandProfile.status ?? "",
       admins: Array.isArray(user.bandProfile.admins) ? user.bandProfile.admins : [],
