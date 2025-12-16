@@ -9,10 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
 
-    <link rel="stylesheet" href="/styles/profile.css">
-    <style>
-        
-</style>
+    <link rel="stylesheet" href="../styles/profile.css">
 </head>
 
 <body>
@@ -48,6 +45,10 @@
     <div class="profile-container">
         <div class="pfp" id="pfpDisplay"></div>
         <input type="file" id="pfpUpload" accept="image/*" style="margin-top:12px;">
+        <div class="name" id="profileName" contenteditable="true">Cool Band</div>
+        <div class="bio" id="profileBio" contenteditable="true">
+            We play indie rock and love collaborating with new artists.
+        </div>          
         
         <div class="name-and-role">
             <div class="name" id="displayName"></div>
@@ -182,6 +183,25 @@
             lucide.createIcons();
         }
 
+        const isOwner = true; // later check auth
+
+        if (!isOwner) {
+            document.querySelectorAll('[contenteditable]').forEach(el => {
+                el.setAttribute('contenteditable', 'false');
+            });
+
+            const pfpUpload = document.getElementById('pfpUpload');
+            if (pfpUpload) pfpUpload.style.display = 'none';
+
+            const addPostBtn = document.getElementById('addPostBtn');
+            if (addPostBtn) addPostBtn.style.display = 'none';
+
+            const galleryUpload = document.getElementById('galleryUpload');
+            if (galleryUpload) galleryUpload.style.display = 'none';
+
+            document.getElementById('tagContainer').classList.add('readonly');
+        }
+
         const menuBtn = document.getElementById('menuBtn');
         const sideMenu = document.getElementById('sideMenu');
 
@@ -226,6 +246,8 @@
             }
         ];
 
+        let currentEditId = null;
+
         function loadCarousel(){
             const c = document.getElementById('postCarousel');
             c.innerHTML = '';
@@ -233,13 +255,68 @@
             POSTS.forEach(p => {
                 const card = document.createElement('div');
                 card.className = 'post-card';
-                card.onclick = () => location.href = `post.html?id=${p.id}`;
-                card.innerHTML = `<h3>${p.title}</h3><p>${p.desc}</p>`;
+
+                card.innerHTML = `
+                    <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                        <h3>${p.title}</h3>
+                        ${isOwner ? `
+                        <div style="display:flex; gap:6px;">
+                            <span class="edit-btn">✏️</span>
+                            <span class="delete-btn">🗑</span>
+                        </div>` : ''}
+                    </div>
+                    <p>${p.desc}</p>
+                `;
+
+                // card click → post page
+                card.onclick = () => {
+                    location.href = `post.html?id=${p.id}`;
+                };
+
+                // ONLY attach handlers if owner
+                if (isOwner) {
+                    const editBtn = card.querySelector('.edit-btn');
+                    const deleteBtn = card.querySelector('.delete-btn');
+
+                    if (editBtn) {
+                        editBtn.onclick = (e) => {
+                            e.stopPropagation();
+                            openEditModal(p);
+                        };
+                    }
+
+                    if (deleteBtn) {
+                        deleteBtn.onclick = (e) => {
+                            e.stopPropagation();
+                            deletePost(p.id);
+                        };
+                    }
+                }
+
                 c.appendChild(card);
             });
         }
 
+
         loadCarousel();
+
+        function openEditModal(post) {
+            currentEditId = post.id;
+
+            document.getElementById('postTitle').value = post.title;
+            document.getElementById('postDesc').value = post.desc;
+            document.getElementById('postType').value = post.type;
+
+            document.getElementById('modalBg').style.display = 'flex';
+        }
+
+        function deletePost(id) {
+            const index = POSTS.findIndex(p => p.id === id);
+            if (index !== -1) {
+                POSTS.splice(index, 1);
+                loadCarousel();
+            }
+        }
 
         // arrow scrolling
         const postCarousel = document.getElementById('postCarousel');
@@ -252,7 +329,21 @@
         }
 
         const modalBg=document.getElementById('modalBg');
-        document.getElementById('addPostBtn').onclick=()=>{ modalBg.style.display='flex'; };
+        const addPostBtn = document.getElementById('addPostBtn');
+
+        if (isOwner && addPostBtn) {
+            addPostBtn.onclick = () => {
+                currentEditId = null;
+                document.getElementById('postTitle').value = '';
+                document.getElementById('postDesc').value = '';
+                document.getElementById('postType').value = 'gig';
+                modalBg.style.display = 'flex';
+            };
+        } else if (addPostBtn) {
+            addPostBtn.style.display = 'none';
+        }
+
+
         modalBg.onclick=e=>{ if(e.target===modalBg) modalBg.style.display='none'; };
 
         document.getElementById('savePostBtn').onclick = () => {
@@ -260,22 +351,39 @@
             const d = document.getElementById('postDesc').value;
             const type = document.getElementById('postType').value;
 
-            if (!t || !d) return; // simple guard
+            if (!t || !d) return;
 
-            POSTS.push({
-                id: Date.now(),           // unique id
-                title: t,
-                desc: d,
-                type: type,
-                price: '',
-                date: '',
-                location: '',
-                profileName: 'Cool Band'
-            });
+            if (currentEditId) {
+                // EDIT EXISTING POST
+                const post = POSTS.find(p => p.id === currentEditId);
+                if (post) {
+                    post.title = t;
+                    post.desc = d;
+                    post.type = type;
+                }
+            } else {
+                // CREATE NEW POST
+                POSTS.push({
+                    id: Date.now(),
+                    title: t,
+                    desc: d,
+                    type: type,
+                    profileName: 'Cool Band'
+                });
+            }
 
+            currentEditId = null;
             loadCarousel();
-            modalBg.style.display = 'none';
+            document.getElementById('modalBg').style.display = 'none';
         };
+
+        // tag select
+        document.querySelectorAll('#tagContainer .pill').forEach(pill => {
+            if (isOwner) {
+                pill.onclick = () => pill.classList.toggle('active');
+            }
+        });
+
 
         // pfp upload WIP
         const pfpUpload=document.getElementById('pfpUpload');
@@ -290,15 +398,39 @@
         // gallery upload WIP
         const galleryUpload=document.getElementById('galleryUpload');
         const gallery=document.getElementById('gallery');
-        if(galleryUpload) galleryUpload.onchange=e=>{
-            const file=e.target.files[0];
-            if(file){
-                const div=document.createElement('div');
-                div.className='gallery-item';
-                div.style.background=`url(${URL.createObjectURL(file)}) center/cover`;
+
+        if (!isOwner) {
+            const galleryUpload = document.getElementById('galleryUpload');
+            if (galleryUpload) galleryUpload.style.display = 'none';
+
+            document.querySelectorAll('.gallery-delete').forEach(btn => {
+                btn.remove();
+            });
+        }
+
+
+        if (galleryUpload) {
+            galleryUpload.onchange = e => {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                const div = document.createElement('div');
+                div.className = 'gallery-item';
+                div.style.background = `url(${URL.createObjectURL(file)}) center/cover`;
+                div.innerHTML = `<span class="gallery-delete">×</span>`;
+
+                div.querySelector('.gallery-delete').onclick = (ev) => {
+                    ev.stopPropagation();
+                    div.remove();
+                };
+
                 gallery.appendChild(div);
-            }
-        };
+
+                galleryUpload.value = '';
+            };
+        }
+
+
     </script>
 
     <!-- Fill info from db -->
@@ -449,8 +581,6 @@
 
         loadProfile();
     </script>
-
-
 
 </body>
 </html>
