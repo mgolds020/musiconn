@@ -1,0 +1,347 @@
+:root {
+            --red:#e63946;
+            --dred:#a22e38;
+            --gray:#666;
+            --black:#111;
+            --light:#f4f4f4;
+        }
+        * { margin:0; padding:0; box-sizing:border-box; font-family:'Inter',sans-serif; }
+
+        body { background:white; }
+
+        header {
+            position: sticky;
+            top: 0;
+            height: 60px;
+            background: white; /* prevents transparency when scrolling */
+            border-bottom: 1px solid #eee;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1500; /* stays above content but below menu button */
+        }
+
+        /* center the title */
+        header h1 {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            margin: 0;
+        }
+
+        /* MENU BUTTON — fixed so it can slide with menu */
+        #menuBtn {
+            position: fixed;
+            top: 14px;
+            left: 20px;
+            z-index: 3000;
+            transition: left 0.3s ease;
+        }
+
+        /* slide menu button with menu */
+        body.menu-open #menuBtn {
+            left: 244px;
+        }
+
+        /* PROFILE ICON — right side, absolutely positioned */
+        header .icon-btn:last-of-type {
+            position: absolute;
+            right: 24px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+
+        /* slide-out menu that overlays and doesn't push content */
+        .menu {
+            position: fixed;
+            top: 60px;
+            left: -220px;           /* start hidden off-screen */
+            width: 220px;
+            height: 100vh;
+            background: #fff;
+            border-right: 1px solid #eee;
+            padding: 24px;
+            transition: left 0.3s ease;
+            z-index: 1000;
+        }
+
+        /* when we add .open in JS, it slides in */
+        .menu.open {
+            left: 0;
+        }
+
+        /* Make menu button move with menu */
+        #menuBtn {
+            position: fixed;
+            top: 16px;
+            left: 20px;
+            z-index: 2000;
+            transition: left 0.3s ease;
+        }
+
+        /* When menu is open, shift the button to the right */
+        .menu.open ~ #menuBtn,
+        .menu.open + #menuBtn {
+            left: 244px; /* 220px menu + some margin */
+        }
+
+
+        .menu a {
+            display: block;
+            margin-bottom: 16px;
+            text-decoration: none;
+            color: var(--black);
+            font-weight: 500;
+        }
+
+        .menu a.active {
+        color: var(--red);
+        }
+
+        .icon-btn { 
+            cursor:pointer; 
+            color:var(--gray); 
+        }
+        .icon-btn:hover { 
+            color:var(--black); 
+        }
+
+        .banner {
+            position: relative;
+            height: 180px;
+            background: linear-gradient(135deg,#e63946,#ff8fa3);
+        }
+
+        /* back button inside banner */
+        .banner-back {
+            position: absolute;
+            top: 16px;
+            left: 16px;
+            z-index: 10;
+            cursor:pointer;
+        }
+
+        .back-circle {
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            background: rgba(0,0,0,0.25);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .back-circle svg {
+            width: 24px;
+            height: 24px;
+            stroke: white;
+        }
+
+        .back-circle:hover {
+            background: rgba(0,0,0,0.35);
+        }
+
+        .profile-container {
+            max-width:900px;
+            margin:0 auto;
+            padding:0 24px;
+            position:relative;
+            top:-40px;
+        }
+
+        .pfp {
+            width:110px; height:110px;
+            border-radius:50%; background:#ccc;
+            border:4px solid white;
+        }
+
+        .bio {
+            color:var(--gray);
+            margin-top:6px;
+        }
+
+        .stageandlegalname {
+            color:var(--gray);
+            margin-top:6px;
+        }
+
+        .section-title {
+            font-size:18px; font-weight:600;
+            margin:32px 0 12px;
+        }
+
+        /* posts carousel */
+        .carousel {
+            display:flex;
+            flex-wrap:nowrap;
+            gap:16px;
+            overflow-x:auto;
+            overflow-y:hidden;
+            padding-bottom:10px;
+            scroll-behavior:smooth;
+        }
+
+        .post-card {
+            flex:0 0 240px; /* fixed width cards so they don't wrap */
+            border:1px solid #eee; border-radius:12px;
+            padding:16px; background:white;
+            cursor:pointer;
+        }
+        .post-card h3 { font-size:16px; margin-bottom:6px; }
+        .post-card p { color:var(--gray); font-size:14px; }
+
+
+        /* create post button */
+        .add-btn {
+            position:fixed;
+            bottom:24px; right:24px;
+            width:60px; height:60px;
+            border-radius:50%;
+            background:var(--red);
+            display:flex; align-items:center; justify-content:center;
+            cursor:pointer;
+        }
+        .add-btn i { color:white; }
+
+        /* pop-up */
+        .modal-bg {
+            display:none;
+            position:fixed; inset:0;
+            background:rgba(0,0,0,0.4);
+            align-items:center; justify-content:center;
+            z-index:4000; /* ensure it sits above arrows and header */
+        }
+
+        .modal {
+            width:420px;
+            background:white;
+            border-radius:12px;
+            padding:24px;
+            box-shadow:0 8px 24px rgba(0,0,0,0.15);
+        }
+        .modal h2 { margin-bottom:16px; }
+
+        .field { margin-bottom:14px; }
+        .field label { display:block; margin-bottom:4px; font-size:14px; }
+        .field input, .field select, .field textarea {
+            width:100%; padding:10px; border:1px solid #ccc;
+            border-radius:8px;
+        }
+        textarea { height:90px; resize:none; }
+
+        .save-btn {
+            width:100%; background:var(--red); color:white;
+            border:none; padding:12px; border-radius:8px; cursor:pointer;
+        }
+
+        /* bands sidebar */
+        .profile-layout {
+            display:flex;
+            gap:32px;
+            flex-direction:row-reverse;
+        }
+
+        .profile-main {
+            flex:1;
+            min-width:0; /* allow carousel to overflow instead of stretching layout */
+        }
+
+        .bands-sidebar {
+            width:250px;
+        }
+
+        .band-card {
+            display:flex;
+            align-items:center;
+            gap:12px;
+            padding:12px;
+            border:1px solid #eee;
+            border-radius:10px;
+            margin-bottom:12px;
+            cursor:pointer;
+        }
+
+        .band-pfp {
+            width:48px; height:48px;
+            border-radius:50%;
+            background:#ccc;
+        }
+
+        /* tags */
+        .pill-container {
+            display:flex;
+            gap: 8px; 
+        }
+    
+        .pill {
+            padding:6px 12px;
+            border-radius:20px;
+            background:#eee;
+            cursor:pointer;
+            user-select:none;
+        }
+
+        .pill:hover { 
+            background: var(--gray); 
+        }
+
+        .pill.active {
+            background:var(--red);
+            color:white;
+        }
+
+        .pill.active:hover { 
+            background: var(--dred); 
+        }
+
+        /* gallery */
+        #gallery {
+            display:grid;
+            grid-template-columns:repeat(3,1fr);
+            gap:12px;
+        }
+        .gallery-item {
+            height:100px;
+            background:#ddd;
+            border-radius:8px;
+        }
+            /* ensure carousel never stretches layout */
+        .posts-carousel-wrapper {
+            max-width:100%;
+            overflow:hidden;
+        }
+        #postCarousel {
+            max-width:100%;
+        }
+
+        .display-name {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .name-and-role{
+            display:flex;
+            align-items: baseline;   /* baseline is usually the “looks centered” fix for text+icon */
+            gap:10px;
+            margin-top:12px;
+        }
+
+        .name{
+            font-size: 28px;
+            font-weight: 700;
+            line-height: 1.1;        /* important: controls baseline + vertical rhythm */
+            margin: 0;               /* kill margin-top here; let the wrapper control spacing */
+        }
+
+        .role-icon{
+            width: 20px;
+            height: 20px;
+            color: var(--gray);
+            position: relative;
+            top: 2px;                /* tiny nudge down; adjust 1–3px if needed */
+        }
