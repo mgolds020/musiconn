@@ -171,7 +171,7 @@
 
         .section-title {
             font-size:18px; font-weight:600;
-            margin:32px 0 12px;
+            margin:0px 0 12px;
         }
 
         /* posts carousel */
@@ -364,4 +364,41 @@
             color: var(--gray);
             position: relative;
             top: 2px;                /* tiny nudge down; adjust 1–3px if needed */
+        }
+
+        .card{
+          background:#fff;
+          border:1px solid #eee;
+          border-radius: 14px;
+          padding: 16px;
+          margin-top: 12px;
+        }
+
+        .card--muted{
+          background: #fafafa;
+        }
+
+        .kv{
+          display:grid;
+          gap: 10px;
+          margin-top: 8px;
+        }
+
+        .kv-row{
+          display:grid;
+          grid-template-columns: 140px 1fr;
+          gap: 12px;
+          align-items: baseline;
+        }
+
+        .kv dt{
+          color: var(--gray);
+          font-size: 13px;
+          font-weight: 500;
+        }
+
+        .kv dd{
+          color: var(--black);
+          font-size: 14px;
+          font-weight: 600;
         }
