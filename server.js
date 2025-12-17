@@ -279,9 +279,11 @@ http.createServer((req, res) => {
                     return jsonResponse(res, 500, { error: "Server Error: Logout" });
                 }
                 
+                clearRefreshCookie(res);
                 client.close();
                 res.writeHead(303, {Location: '/login'});
                 res.end('');
+
                 return;
             });
         });

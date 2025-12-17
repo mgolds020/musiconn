@@ -258,8 +258,10 @@
         }
 
         if (logoutBtn) {
-            logoutBtn.addEventListener("click", () => {
-                fetch(`/logout?username=${username}`);
+            logoutBtn.addEventListener("click", async () => {
+                await fetch(`/logout?username=${username}`);
+                sessionStorage.clear();
+                window.location.href = "/login";
             });
         }
 
