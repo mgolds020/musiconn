@@ -205,7 +205,7 @@
           method: "POST",
           headers: { "Content-Type": "application/x-www-form-urlencoded" },
           body: new URLSearchParams({ username, password }),
-          credentials: "include" // stores refresh cookie set by :8080
+          credentials: "include" // stores refresh cookie set by the host
         });
 
         const data = await res.json();

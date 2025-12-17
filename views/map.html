@@ -174,12 +174,19 @@
           const address = post.address ?? "";
           const description = post.description ?? "";
 
+          const postId = post._id ?? post.id; // mongo uses _id
+
+
           const eventDate = post.eventDate ? new Date(post.eventDate).toLocaleString() : "";
           const datePosted = post.datePosted ? new Date(post.datePosted).toLocaleDateString() : "";
 
           marker.bindPopup(`
             <div>
-              <strong>${title}</strong>
+              <strong>
+                <a href="/post?id=${encodeURIComponent(postId)}" class="popup-title-link">
+                  ${title}
+                </a>
+              </strong>
               <div>${address}</div>
 
               <div style="margin-top: 6px;">

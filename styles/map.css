@@ -223,3 +223,12 @@ body.menu-open .menu {
   color: var(--gray);
   font-size: 14px;
 }
+
+.popup-title-link {
+  color: inherit;
+  text-decoration: none;
+}
+
+.popup-title-link:hover {
+  text-decoration: underline;
+}
