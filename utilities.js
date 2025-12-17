@@ -55,7 +55,7 @@ function authenticateToken(req, res, callback) {
   if (!token) return jsonResponse(res, 401, { error: "No Token" });
 
   jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, payload) => {
-    if (err) return jsonResponse(res, 403, { error: "Invalid Token" });
+    if (err) return jsonResponse(res, 401, { error: "Invalid Token" });
     callback(payload);
   });
 }

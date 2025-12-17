@@ -43,8 +43,9 @@ http.createServer((req, res) => {
     }
 
     if (path === "/" && req.method === "GET") {
-
-        loadFile("views/map.html", res);
+        authenticateToken(req, res, (tokenInfo) => {
+            loadFile("views/map.html", res);
+        })
 
     } else if (path === "/login" && req.method === "GET") {
 
@@ -55,19 +56,22 @@ http.createServer((req, res) => {
         loadFile("views/signup.html", res);
 
     } else if (path === "/gigs" && req.method === "GET") {
-
-        loadFile("views/gigs.html", res);
+        authenticateToken(req, res, (tokenInfo) => {
+            loadFile("views/gigs.html", res);
+        });
 
     } else if (path === "/profile" && req.method === "GET") {
-
-        loadFile("views/profile.html", res);
+        authenticateToken(req, res, (tokenInfo) => {
+            loadFile("views/profile.html", res);
+        });
     
     } else if (path === "/editprofile" && req.method === "GET") {
-
-        loadFile("views/edit-profile.html", res);
+        authenticateToken(req, res, (tokenInfo) => {
+            loadFile("views/edit-profile.html", res);
+        });
 
     } else if (path === "/users" && req.method === "GET") {
-        //authenticateToken(req, res, () => {
+        authenticateToken(req, res, () => {
             const qObj = urlObj.parse(req.url, true).query;
             const username = (qObj.username || "").trim();
 
@@ -91,7 +95,7 @@ http.createServer((req, res) => {
                     return jsonResponse(res, 200, publicUser);
                 });
             });
-        //});
+        });
 
 
         // loadFile("views/profile.html", res);
@@ -154,130 +158,140 @@ http.createServer((req, res) => {
         });
 
     } else if (path === "/map" && req.method === "GET") {
-        loadFile("views/map.html", res);
+        authenticateToken(req, res, (tokenInfo) => {
+            loadFile("views/map.html", res);
+        })
 
     } else if (path === '/makepost' && req.method === 'GET' ) {
-        loadFile("views/makepost.html", res);
+        authenticateToken(req, res, (tokenInfo) => {
+            loadFile("views/makepost.html", res);
+        });
 
     } else if (path === '/post' && req.method === 'GET' ) {
-        loadFile("views/post.html", res);
+
+        authenticateToken(req, res, (tokenInfo) => {
+            loadFile("views/post.html", res);
+        });
 
     } else if (path === '/post/id' && req.method === 'GET' ) {
-
-        const qObj = urlObj.parse(req.url, true).query;
-        const idRaw = qObj.postid;
-        if (!idRaw) return jsonResponse(res, 400, { error: "Bad Request: Missing User ID"});
-        const postId = new mongo.ObjectId(idRaw);
-        manageCollection(res, 'posts', (res, collection, client) => {
-            collection.findOne({ _id: postId }, (err, post) => {
-
-                if(err) {
-                    console.log("Query Error: " + err);
-                    client.close();
-                    return jsonResponse(res, 500, {error: "Database Query Error"});
-                }
-
-                if(!post) {
-                    console.log("Error: this post does not exist");
-                    client.close();
-                    return jsonResponse(res, 404, {error: `No post Exists with ID ${postId}` });
-                }
-
-                post._id = post._id.toString();
-                
-                jsonResponse(res, 200, post);
-                client.close();
-            });
-        });   
-
-    }else if (path === "/posts" && req.method === "POST") {
-        
-        let myFormData = '';
-        req.on('data', newData => { myFormData += newData.toString(); });
-        // end = event when data stops being sent
-        req.on('end', () => {
-            let body;
-            try {
-                body = JSON.parse(myFormData);
-            } catch {
-                return jsonResponse(res, 400, { error: "Invalid JSON" });
-            }
-
-            const lon = Number(body?.location?.coordinates?.[0]);
-            const lat = Number(body?.location?.coordinates?.[1]);
-            const miles = Number(body?.distanceMiles ?? 20);
-            const distance = miles / 3958.8; // miles → radians
-            const types = body?.types;
-
-            if (!Number.isFinite(lon) || !Number.isFinite(lat)) {
-                return jsonResponse(res, 400, {
-                    error: "Invalid coordinates",
-                    received: body
-                });
-            }
-
-            // pre-build the query, conditionally filtering event type
-            const query = {
-                location: {
-                    $geoWithin: {
-                        $centerSphere: [
-                            [lon, lat],
-                            distance
-                        ]
-                    }
-                }
-            }
-
-            if(Array.isArray(types) && types.length > 0) {
-                query.type = { $in: types };
-            }
-
-            // run a geospatial query returning
+        authenticateToken(req, res, (tokenInfo) => {
+            const qObj = urlObj.parse(req.url, true).query;
+            const idRaw = qObj.postid;
+            if (!idRaw) return jsonResponse(res, 400, { error: "Bad Request: Missing User ID"});
+            const postId = new mongo.ObjectId(idRaw);
             manageCollection(res, 'posts', (res, collection, client) => {
-                collection.find(query).toArray((err, events) => {
+                collection.findOne({ _id: postId }, (err, post) => {
+
                     if(err) {
                         console.log("Query Error: " + err);
                         client.close();
                         return jsonResponse(res, 500, {error: "Database Query Error"});
                     }
 
-                    console.log("Geo query returned", events.length, "documents");
-                    console.log(events.map(e => ({
-                        title: e.title,
-                        coords: e.location?.coordinates
-                    })));
+                    if(!post) {
+                        console.log("Error: this post does not exist");
+                        client.close();
+                        return jsonResponse(res, 404, {error: `No post Exists with ID ${postId}` });
+                    }
 
-                    jsonResponse(res, 200, events);
+                    post._id = post._id.toString();
+                    
+                    jsonResponse(res, 200, post);
                     client.close();
                 });
             });
         });
 
-    } else if (path === "/posts" && req.method === 'GET') {
-
-        const qObj = urlObj.parse(req.url, true).query;
-        const idRaw = qObj.userid;
-        if (!idRaw) return jsonResponse(res, 400, { error: "Bad Request: Missing User ID"});
-        const userId = new mongo.ObjectId(idRaw);
-        manageCollection(res, 'posts', (res, collection, client) => {
-            collection.find({ authorId: userId }).toArray((err, posts) => {
-                if(err) {
-                    console.log("Query Error: " + err);
-                    client.close();
-                    return jsonResponse(res, 500, {error: "Database Query Error"});
+    }else if (path === "/posts" && req.method === "POST") {
+        authenticateToken(req, res, (tokenInfo) => {
+            let myFormData = '';
+            req.on('data', newData => { myFormData += newData.toString(); });
+            // end = event when data stops being sent
+            req.on('end', () => {
+                let body;
+                try {
+                    body = JSON.parse(myFormData);
+                } catch {
+                    return jsonResponse(res, 400, { error: "Invalid JSON" });
                 }
 
-                console.log("posts query returned", posts.length, "documents");
-                console.log(posts.map(e => ({
-                    title: e.title,
-                    description: e.description
-                })));
+                const lon = Number(body?.location?.coordinates?.[0]);
+                const lat = Number(body?.location?.coordinates?.[1]);
+                const miles = Number(body?.distanceMiles ?? 20);
+                const distance = miles / 3958.8; // miles → radians
+                const types = body?.types;
 
-                //stringify post IDs
-                posts.forEach(post => post._id = post._id.toString());
-                
-                jsonResponse(res, 200, posts);
-                client.close();
+                if (!Number.isFinite(lon) || !Number.isFinite(lat)) {
+                    return jsonResponse(res, 400, {
+                        error: "Invalid coordinates",
+                        received: body
+                    });
+                }
+
+                // pre-build the query, conditionally filtering event type
+                const query = {
+                    location: {
+                        $geoWithin: {
+                            $centerSphere: [
+                                [lon, lat],
+                                distance
+                            ]
+                        }
+                    }
+                }
+
+                if(Array.isArray(types) && types.length > 0) {
+                    query.type = { $in: types };
+                }
+
+                // run a geospatial query returning
+                manageCollection(res, 'posts', (res, collection, client) => {
+                    collection.find(query).toArray((err, events) => {
+                        if(err) {
+                            console.log("Query Error: " + err);
+                            client.close();
+                            return jsonResponse(res, 500, {error: "Database Query Error"});
+                        }
+
+                        console.log("Geo query returned", events.length, "documents");
+                        console.log(events.map(e => ({
+                            title: e.title,
+                            coords: e.location?.coordinates
+                        })));
+
+                        jsonResponse(res, 200, events);
+                        client.close();
+                    });
+                });
+            });
+        });
+
+    } else if (path === "/posts" && req.method === 'GET') { // OPTIONAL TODO: Maybe if they dont specify a user they get returned their OWN posts
+        authenticateToken(req, res, (tokenInfo) => {
+            const qObj = urlObj.parse(req.url, true).query;
+            const idRaw = qObj.userid;
+            if (!idRaw) return jsonResponse(res, 400, { error: "Bad Request: Missing User ID"});
+            const userId = new mongo.ObjectId(idRaw);
+            manageCollection(res, 'posts', (res, collection, client) => {
+                collection.find({ authorId: userId }).toArray((err, posts) => {
+                    if(err) {
+                        console.log("Query Error: " + err);
+                        client.close();
+                        return jsonResponse(res, 500, {error: "Database Query Error"});
+                    }
+
+                    console.log("posts query returned", posts.length, "documents");
+                    console.log(posts.map(e => ({
+                        title: e.title,
+                        description: e.description
+                    })));
+
+                    //stringify post IDs
+                    posts.forEach(post => post._id = post._id.toString());
+                    
+                    jsonResponse(res, 200, posts);
+                    client.close();
+                });
             });
         });      
     } else if (path === '/posts/delete' && req.method === 'POST' ) {

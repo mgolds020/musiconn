@@ -206,8 +206,9 @@ http.createServer((req, res) => {
         const refreshToken = cookies.refreshToken;
 
         if (!refreshToken) {
-            return jsonResponse(res, 401, { error: "Unauthorized: missing refresh token" });
-            // TO DO: Should I log out? 
+            res.writeHead(303, {Location: '/login'});
+            res.end('');
+            return;
         }
 
         let payload;
@@ -218,7 +219,7 @@ http.createServer((req, res) => {
         }
 
         manageCollection(res, 'users', (res, collection, client) => {
-                // confirm token matches what we stored for this user
+            
             collection.findOne({ _id: new mongo.ObjectId(payload.sub)}, (err, dbUser) => {
                 if (err || !dbUser) {
                     client.close();
