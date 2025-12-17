@@ -11,8 +11,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "devStart": "nodemon server.js",
-    "devStartAuth": "nodemon authServer.js"
+    "start": "node server.js"
   },
   "keywords": [],
   "author": "",

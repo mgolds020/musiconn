@@ -855,17 +855,19 @@ function parseCookies(req) {
 }
 
 function setRefreshCookie(res, refreshToken) {
+    const isProd = process.env.NODE_ENV === "production";
   // For local dev over http, omit Secure. In production over https, add Secure.
   const cookie = [
     `refreshToken=${encodeURIComponent(refreshToken)}`,
     "HttpOnly",
     "SameSite=Lax",
-    "Secure=true",
     "Path=/",
     // "Secure", // enable when serving over https
     // "Max-Age=604800" // optional: 7 days
-  ].join("; ");
-  res.setHeader("Set-Cookie", cookie);
+  ];
+
+  if(isProd) partialDeepStrictEqual.push("Secure");
+  res.setHeader("Set-Cookie", cookie.join("; "));
 }
 
 function clearRefreshCookie(res) {

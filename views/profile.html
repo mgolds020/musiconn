@@ -196,11 +196,6 @@
                 card.innerHTML = `
                     <div style="display:flex; justify-content:space-between; align-items:flex-start;">
                         <h3>${p.title}</h3>
-                        ${isOwner ? `
-                        <div style="display:flex; gap:6px;">
-                            <span class="edit-btn">✏️</span>
-                            <span class="delete-btn">🗑</span>
-                        </div>` : ''}
                     </div>
                     <p>${p.desc}</p>
                 `;
@@ -209,26 +204,6 @@
                 card.onclick = () => {
                     location.href = `/post?id=${p.id}`;
                 };
-
-                // ONLY attach handlers if owner
-                if (isOwner) {
-                    const editBtn = card.querySelector('.edit-btn');
-                    const deleteBtn = card.querySelector('.delete-btn');
-
-                    if (editBtn) {
-                        editBtn.onclick = (e) => {
-                            e.stopPropagation();
-                            openEditModal(p);
-                        };
-                    }
-
-                    if (deleteBtn) {
-                        deleteBtn.onclick = (e) => {
-                            e.stopPropagation();
-                            deletePost(p.id);
-                        };
-                    }
-                }
 
                 c.appendChild(card);
             });
