@@ -868,7 +868,7 @@ function setRefreshCookie(res, refreshToken) {
     // "Max-Age=604800" // optional: 7 days
   ];
 
-  if(isProd) partialDeepStrictEqual.push("Secure");
+  if(isProd) cookie.push("Secure");
   res.setHeader("Set-Cookie", cookie.join("; "));
 }
 
