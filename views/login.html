@@ -201,7 +201,7 @@
       if (!username || !password) return; // don't submit empty login
 
       try {
-        const res = await fetch("http://localhost:8080/login", {
+        const res = await fetch("/login", {
           method: "POST",
           headers: { "Content-Type": "application/x-www-form-urlencoded" },
           body: new URLSearchParams({ username, password }),
@@ -217,7 +217,7 @@
         // stores username for this tab/session
         sessionStorage.setItem("username", username);
 
-        window.location.href = "gigs.html";
+        window.location.href = "/";
       } catch (err) {
         console.error(err);
       }

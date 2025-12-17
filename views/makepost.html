@@ -146,6 +146,33 @@
       color: var(--red);
       min-height: 18px;
     }
+
+    .primary-btn {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    .primary-btn[disabled] {
+      opacity: 0.75;
+      cursor: not-allowed;
+    }
+
+    .spinner {
+      width: 16px;
+      height: 16px;
+      border-radius: 999px;
+      border: 2px solid rgba(255,255,255,0.35);
+      border-top-color: rgba(255,255,255,1);
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
   </style>
 </head>
 <body>
@@ -250,7 +277,7 @@
           </div>
         </div>
 
-        <button class="primary-btn" type="submit">Create post</button>
+        <button class="primary-btn" id="createPostBtn" type="submit">Create post</button>
 
         <div class="error" id="errorText"></div>
         <div class="hint">
@@ -276,6 +303,22 @@
   // Manual coords (make sure you added these inputs in the HTML)
   const manualLngEl = document.getElementById("manualLng");
   const manualLatEl = document.getElementById("manualLat");
+
+  const createPostBtn = document.getElementById("createPostBtn");
+  const originalBtnHTML = createPostBtn ? createPostBtn.innerHTML : "Create post";
+
+  function setLoading(isLoading, label = "Finding location…") {
+    if (!createPostBtn) return;
+
+    if (isLoading) {
+      createPostBtn.disabled = true;
+      createPostBtn.innerHTML = `<span class="spinner" aria-hidden="true"></span><span>${label}</span>`;
+    } else {
+      createPostBtn.disabled = false;
+      createPostBtn.innerHTML = originalBtnHTML;
+    }
+  }
+
 
   function getManualCoords() {
     if (!manualLngEl || !manualLatEl) return null;
@@ -379,9 +422,15 @@
 
     console.log("Geocode query:", address);
 
-    let coords = await geocode(address);
+    setLoading(true, "Finding location…");
+    let coords = null;
 
-    console.log("Geocode returned:", coords);
+    try {
+      coords = await geocode(address);
+      console.log("Geocode returned:", coords);
+    } finally {
+      // don't turn loading off as we might still be creating the post
+    }
 
     // If geocode failed, try manual coords (optional)
     if (!coords || !Number.isFinite(coords.lat) || !Number.isFinite(coords.lng)) {
@@ -404,6 +453,7 @@
 
     const longitude = coords.lng;
     const latitude = coords.lat;
+    const author = sessionStorage.getItem("username");
 
     // const accessToken = sessionStorage.getItem("accessToken");
     // if (!accessToken) {
@@ -419,10 +469,9 @@
       priceHighBound,
       address,
       longitude,
-      latitude
+      latitude,
+      author
     };
-
-    
 
     if (type === "gig" || type === "jam") {
       if (!eventDateEl.value) {
@@ -433,15 +482,12 @@
     }
 
     try {
-      // TODO SECURE
+      setLoading(true, "Creating post…");
+
       const res = await authFetch("/posts/create", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded"
-        },
-        body: new URLSearchParams({
-          post: JSON.stringify(post)   // server expects qs.parse(...).post
-        })
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({ post: JSON.stringify(post) })
       });
 
       const data = await res.json();
@@ -450,11 +496,21 @@
         return;
       }
 
-      window.location.href = "gigs.html";
+      const view =
+        type === "lesson" ? "learn" :
+        type === "gig"    ? "gig" :
+        type === "jam"    ? "jam" :
+        "gig"; // safe fallback
+
+      window.location.href = `/gigs?view=${view}`;
+      
     } catch (err) {
       console.error(err);
       errorText.textContent = "Request failed. Check server is running.";
+    } finally {
+      setLoading(false);
     }
+
   });
 </script>
 

@@ -125,6 +125,12 @@
         <i data-lucide="plus"></i>
     </div>
 
+    <div class="logout">
+        <button class="logout-btn" id="logoutBtn" style="display:none;">
+            Log out
+        </button>
+    </div>
+
     <script>
         // icons + menu wiring
         if (window.lucide) {
@@ -270,6 +276,17 @@
             addPostBtn.style.display = 'none';
         }
 
+        const logoutBtn = document.getElementById("logoutBtn");
+
+        if (isOwner && logoutBtn) {
+            logoutBtn.style.display = "inline-block";
+        }
+
+        if (logoutBtn) {
+            logoutBtn.addEventListener("click", () => {
+                fetch(`/logout?username=${username}`);
+            });
+        }
 
         modalBg.onclick=e=>{ if(e.target===modalBg) modalBg.style.display='none'; };
 

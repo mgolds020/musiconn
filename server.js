@@ -4,6 +4,7 @@
 require('dotenv').config();
 const http = require('http');
 const urlObj = require('url');
+const bcrypt = require('bcrypt');
 const qs = require('querystring'); // parsing for post
 const fs = require('fs');
 const mongo = require('mongodb');
@@ -12,9 +13,34 @@ const jwt = require('jsonwebtoken');
 const { loadFile, authenticateToken, jsonResponse, manageCollection } = require('./utilities');
 
 // connecting and serving information
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
+
+// allow CORS requests from the client server
+function handleCORS(req, res) {
+  res.setHeader("Access-Control-Allow-Origin", "http://localhost:3000");
+  res.setHeader("Access-Control-Allow-Credentials", "true");
+  res.setHeader(
+    "Access-Control-Allow-Headers",
+    "Content-Type, Authorization"
+  );
+  res.setHeader(
+    "Access-Control-Allow-Methods",
+    "GET, POST, OPTIONS"
+  );
+
+  // Preflight request
+  if (req.method === "OPTIONS") {
+    res.writeHead(204);
+    res.end();
+    return true;
+  }
+  return false;
+}
 
 http.createServer((req, res) => {
+
+    if (handleCORS(req, res)) return;
+
     // res.writeHead(200, {'Content-Type': 'text/html'});
     const path = urlObj.parse(req.url).pathname;
 
@@ -42,7 +68,224 @@ http.createServer((req, res) => {
         return;
     }
 
-    if (path === "/" && req.method === "GET") {
+       if (path === '/signup' && req.method === 'GET') {
+        
+        // render the signup view
+        loadFile('views/signup.html', res);
+
+    } else if(path === '/signup' && req.method === 'POST') {
+
+        let myFormData = '';
+
+        // handle new user Post data
+        req.on('data', newData => { myFormData += newData.toString(); });
+        req.on('end', () => {
+            
+            // grab auth form input
+            const parsedData = qs.parse(myFormData);
+            const usernameEntered = parsedData.username;
+            const passwordEntered = parsedData.password;
+            
+            if(usernameEntered == '' || passwordEntered == '') {
+                console.log("Error: one or more fields is empty");
+                return jsonResponse(res, 400, { error: 'Bad Input' });
+            }
+
+            const hashedPass = bcrypt.hashSync(passwordEntered, 10);
+            
+            manageCollection(res, 'users', (res, collection, client) => {
+                
+                collection.findOne({username: usernameEntered}, (err, user) => {
+
+                    if(err) {
+                        console.log(`Error qeurying: ${err}`);
+                        jsonResponse(res, 500, { error: 'Database Error' });
+                        client.close();
+                        return;
+                    }
+
+                    if (user) {
+                        console.log("Username Already Exists");
+                        jsonResponse(res, 409, { error: 'Username already exists' });
+                        client.close();
+                        return;
+                    }
+
+                    collection.insertOne({username: usernameEntered, password: hashedPass}, (err) => {
+
+                        if(err) {
+                            console.log(`Insertion error: ${err}`);
+                            jsonResponse(res, 500, { error: 'Error Creating User'})
+                        } else {
+                            // redirect user to log in page
+                            console.log("User successfully created, redirecting to login page");
+                            jsonResponse(res, 201, { message: "User created" });
+                            client.close();
+                            return;
+                        }
+
+                        client.close();
+
+                    });
+                });
+            });
+        });
+
+    } else if (path === '/login' && req.method === 'GET') {
+
+        // render the log-in view
+        loadFile('views/login.html', res);
+
+    } else if (path === '/login' && req.method === 'POST') {
+        let myFormData = '';
+
+        req.on('data', newData => { myFormData += newData.toString(); });
+        req.on('end', () => {
+
+            // grab auth form input
+            const parsedData = qs.parse(myFormData);
+            const usernameEntered = parsedData.username;
+            const passwordEntered = parsedData.password;
+
+            if(usernameEntered == '' || passwordEntered == '') {
+                console.log("Error: one or more fields is empty");
+                return jsonResponse(res, 400, { error: 'Bad Input' });
+            }
+
+            manageCollection(res, 'users', (res, collection, client) => {
+                // find the user in our database
+                collection.findOne({username: usernameEntered}, (err, dbUser) => {
+
+                    if(err) {
+                        console.log(`Error qeurying: ${err}`);
+                        jsonResponse(res, 500, { error: 'database query error' });
+                        client.close();
+                        return;
+                    }
+
+                    if (!dbUser) {
+                        console.log(`Invalid Username`);
+                        jsonResponse(res, 401, { error: 'Invalid Username'});
+                        client.close();
+                        return;
+                    }
+
+                    const passwordMatch = bcrypt.compareSync(passwordEntered, dbUser.password);
+
+                    // check if user password = the stored password
+                    if(!passwordMatch) {
+                        console.log('Incorrect password');
+                        jsonResponse(res, 401, { error: 'Incorrect Password'});
+                        client.close();
+                        return;
+                    }
+
+                    // if we make it here, user credentials are valid
+
+                    // create an object with the fields we want to sign with our secret key
+                    const tokenPayload = {
+                        sub: dbUser._id.toString(),
+                        username: dbUser.username,
+                    }
+
+                    // create tokens
+                    const accessToken = generateAccessToken(tokenPayload);
+                    const refreshToken = jwt.sign(tokenPayload, process.env.REFRESH_TOKEN_SECRET, { expiresIn: "7d" });
+                    
+                    // store the refresh token with this user in the database
+                    collection.updateOne({ _id: dbUser._id }, { $set: { refreshToken: refreshToken} }, (err) => {
+                        if (err) {
+                            console.log("ERROR: cannot save refresh token"); 
+                            // TO DO: should log the user out?
+                            jsonResponse(res, 500, { error: 'Error saving refresh token'}); 
+                            client.close();
+                            return;
+                        } 
+
+                        // send encrypted tokens to the front end
+                        setRefreshCookie(res, refreshToken);
+
+                        res.writeHead(200, {
+                            "Content-Type": "application/json",
+                            "Access-Control-Allow-Origin": "http://localhost:3000",
+                            "Access-Control-Allow-Credentials": "true",
+                        });
+                        res.end(JSON.stringify({
+                            message: "Login Success",
+                            accessToken: accessToken
+                        }));
+
+                        client.close();
+                        return;
+                    });
+
+                });
+            });
+        });
+
+    } else if (path === "/token" && req.method == 'POST') {
+
+        // read refresh token from cookie (preferred)
+        const cookies = parseCookies(req);
+        const refreshToken = cookies.refreshToken;
+
+        if (!refreshToken) {
+            res.writeHead(303, {Location: '/login'});
+            res.end('');
+            return;
+        }
+
+        let payload;
+        try {
+            payload = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET);
+        } catch (e) {
+            return jsonResponse(res, 403, { error: "Forbidden: invalid refresh token" });
+        }
+
+        manageCollection(res, 'users', (res, collection, client) => {
+            
+            collection.findOne({ _id: new mongo.ObjectId(payload.sub)}, (err, dbUser) => {
+                if (err || !dbUser) {
+                    client.close();
+                    return jsonResponse(res, 401, { error: "Unauthorized" });
+                }
+
+                if (dbUser.refreshToken !== refreshToken) {
+                    client.close();
+                    return jsonResponse(res, 403, { error: "Forbidden: token mismatch" });
+                }
+
+                // issue a new access token
+                const newAccessToken = generateAccessToken({
+                    sub: dbUser._id.toString(),
+                    username: dbUser.username
+                });
+
+                client.close();
+                return jsonResponse(res, 200, { accessToken: newAccessToken });
+            });
+        });
+
+    } else if (path === '/logout' && req.method === 'GET') {
+        const qObj = urlObj.parse(req.url, true).query;
+        const username = qObj.username;
+        console.log(username);
+        if (!username) return jsonResponse(res, 400, { error: "No user provided"});
+        manageCollection(res, 'users', (res, collection, client) => {
+            collection.updateOne({ username: username }, { $unset: { refreshToken: '' }}, (err) => {
+                if(err) {
+                    console.log("Error Logging out");
+                    client.close();
+                    return jsonResponse(res, 500, { error: "Server Error: Logout" });
+                }
+                
+                client.close();
+                res.writeHead(303, {Location: '/login'});
+                res.end('');
+                return;
+            });
+        });
+    } else if (path === "/" && req.method === "GET") {
         
         loadFile("views/map.html", res);
 
@@ -147,7 +390,7 @@ http.createServer((req, res) => {
                             
                             client.close();
 
-                            return jsonResponse(res, 204, { status: "sucess" });
+                            return jsonResponse(res, 200, { status: "sucess" });
 
                         });
 
@@ -392,7 +635,7 @@ http.createServer((req, res) => {
             });
         });
     } else {
-        res.writeHead(303, {Location: '/'});
+        res.writeHead(303, {Location: '/login'});
         res.end('');
     }
 
@@ -405,6 +648,7 @@ function createPostObject(res, post) {
     // required fields
     const type = String(post?.type ?? '').trim();
     const title = String(post?.title ?? '').trim();
+    const author = String(post?.author ?? '').trim();
     const description = String(post?.description ?? '').trim();
     const latitude = Number(post?.latitude);
     const longitude = Number(post?.longitude);
@@ -428,6 +672,12 @@ function createPostObject(res, post) {
         jsonResponse(res, 400, { error: 'Invalid latitude/longitude' });
         return null;
     }
+    if (!author) {
+        jsonResponse(res, 400, { error: 'No Author provided' });
+        return null;
+    }
+
+
 
     // Optional fields - set null if not POSTed
     const address = post?.address ? String(post.address).trim() : '';
@@ -445,6 +695,7 @@ function createPostObject(res, post) {
     const newPost = {
         type: type,
         title: title,
+        author: author,
         description: description,
         datePosted: new Date(),
         address: address,
@@ -586,3 +837,40 @@ function updateContactInfo($set, oldProf = {}, newProf = {}) {
 }
 
 const sameArray = (a,b) => Array.isArray(a) && Array.isArray(b) && a.length === b.length && a.every((value, index) => value === b[index]);
+
+
+function generateAccessToken(payload) {
+    return jwt.sign(payload, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '15m'});
+}
+
+function parseCookies(req) {
+  const header = req.headers.cookie;
+  if (!header) return {};
+  const out = {};
+  header.split(";").forEach(part => {
+    const [k, ...v] = part.trim().split("=");
+    out[k] = decodeURIComponent(v.join("="));
+  });
+  return out;
+}
+
+function setRefreshCookie(res, refreshToken) {
+  // For local dev over http, omit Secure. In production over https, add Secure.
+  const cookie = [
+    `refreshToken=${encodeURIComponent(refreshToken)}`,
+    "HttpOnly",
+    "SameSite=Lax",
+    "Secure=true",
+    "Path=/",
+    // "Secure", // enable when serving over https
+    // "Max-Age=604800" // optional: 7 days
+  ].join("; ");
+  res.setHeader("Set-Cookie", cookie);
+}
+
+function clearRefreshCookie(res) {
+  res.setHeader(
+    "Set-Cookie",
+    "refreshToken=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0"
+  );
+}

@@ -1,6 +1,5 @@
 // /scripts/authFetch.js
 (() => {
-  const AUTH_ORIGIN = "http://localhost:8080";
   const ACCESS_KEY = "accessToken";
 
   let refreshPromise = null;
@@ -18,7 +17,7 @@
     if (refreshPromise) return refreshPromise;
 
     refreshPromise = (async () => {
-      const res = await fetch(`${AUTH_ORIGIN}/token`, {
+      const res = await fetch('/token', {
         method: "POST",
         credentials: "include", // sends refreshToken cookie
       });
