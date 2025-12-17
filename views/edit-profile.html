@@ -238,7 +238,7 @@
             </div>
             <div class="field">
               <label for="artistStatus">Status</label>
-              <input id="artistStatus" type="text" placeholder="available for gigs" />
+              <input id="artistStatus" type="text" placeholder="available for gigs" maxlength="38"/>
             </div>
           </div>
 
@@ -246,7 +246,7 @@
             <label>Instructor</label>
             <div class="switch">
               <input id="isInstructor" type="checkbox" />
-              <span>Available for lessons</span>
+              <span>I am an instuctor.</span>
             </div>
           </div>
 
@@ -268,7 +268,7 @@
             </div>
             <div class="field">
               <label for="bandStatus">Status</label>
-              <input id="bandStatus" type="text" placeholder="active" />
+              <input id="bandStatus" type="text" placeholder="active, open for gigs" maxlength="38"/>
             </div>
           </div>
 
@@ -291,6 +291,7 @@
       </form>
     </div>
 
+    <script src="/scripts/authFetch.js"></script>
     <script>
       lucide.createIcons();
 
@@ -406,7 +407,11 @@
         }
 
         try {
-          const res = await fetch(`/users?username=${encodeURIComponent(username)}`);
+
+          const res = await authFetch(`/users?username=${encodeURIComponent(username)}`, {
+            method: 'GET',
+            header: {"Accept": "application/json" }
+          });
           const data = await res.json();
 
           if (!res.ok) {
@@ -441,7 +446,8 @@
         const payload = buildPayload();
 
         try {
-          const res = await fetch("/users", {
+
+          const res = await authFetch("/users", {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(payload),

@@ -12,257 +12,63 @@
 
     <script src="https://unpkg.com/lucide@latest"></script>
 
-    <style>
-        :root {
-            --red: #e63946;
-            --black: #111;
-            --gray: #666;
-            --light-gray: #f4f4f4;
-            --white: #fff;
-        }
+    <link rel="stylesheet" href="/styles/gigs.css">
 
-        * {
-        box-sizing: border-box;
-        margin: 0;
-        padding: 0;
-        font-family: 'Inter', sans-serif;
-        }
-
-        body {
-        background: #fff;
-        }
-
-        /* top bar */
-        header {
-        height: 60px;
-        border-bottom: 1px solid #eee;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 0 24px;
-        }
-
-        .left, .right {
-        display: flex;
-        align-items: center;
-        gap: 16px;
-        }
-
-        header {
-            position: sticky;
-            top: 0;
-            height: 60px;
-            background: #fff; /* prevents transparency when scrolling */
-            border-bottom: 1px solid #eee;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 1500; /* stays above content but below menu button */
-        }
-
-        /* center the title */
-        header h1 {
-            position: absolute;
-            left: 50%;
-            transform: translateX(-50%);
-            font-size: 18px;
-            font-weight: 600;
-            cursor: pointer;
-            margin: 0;
-        }
-
-        .subheader {
-            position: sticky;
-            top: 60px;
-            height: 60px;
-            display: flex;
-            align-items: center;
-            padding: 0 40px;
-            background: #fff;
-            border-bottom: 1px solid #eee;
-        }
-
-        /* center the subheader title */
-        .subheader h2 {
-            position: absolute;
-            left: 50%;
-            transform: translateX(-50%);
-            font-size: 20px;
-            font-weight: 600;
-            margin: 0;
-        }
-
-        /* keep the slider icon on the right */
-        .subheader .icon-btn {
-            position: absolute;
-            right: 40px;
-        }
-
-
-        /* MENU BUTTON — fixed so it can slide with menu */
-        #menuBtn {
-            position: fixed;
-            top: 14px;
-            left: 20px;
-            z-index: 3000;
-            transition: left 0.3s ease;
-        }
-
-        /* slide menu button with menu */
-        body.menu-open #menuBtn {
-            left: 244px;
-        }
-
-        /* PROFILE ICON — right side, absolutely positioned */
-        header .icon-btn:last-of-type {
-            position: absolute;
-            right: 24px;
-            top: 50%;
-            transform: translateY(-50%);
-        }
-
-
-        /* slide-out menu that overlays and doesn't push content */
-        .menu {
-            position: fixed;
-            top: 60px;
-            left: -220px;           /* start hidden off-screen */
-            width: 220px;
-            height: 100vh;
-            background: #fff;
-            border-right: 1px solid #eee;
-            padding: 24px;
-            transition: left 0.3s ease;
-            z-index: 1000;
-        }
-
-        /* when we add .open in JS, it slides in */
-        .menu.open {
-            left: 0;
-        }
-
-        /* Make menu button move with menu */
-        #menuBtn {
-            position: fixed;
-            top: 16px;
-            left: 20px;
-            z-index: 2000;
-            transition: left 0.3s ease;
-        }
-
-        /* When menu is open, shift the button to the right */
-        .menu.open ~ #menuBtn,
-        .menu.open + #menuBtn {
-            left: 244px; /* 220px menu + some margin */
-        }
-
-        .menu a {
-            display: block;
-            margin-bottom: 16px;
-            text-decoration: none;
-            color: var(--black);
-            font-weight: 500;
-        }
-
-        .menu a.active {
-        color: var(--red);
-        }
-
-        .icon-btn { 
-            cursor:pointer; 
-            color:var(--gray); 
-        }
-        .icon-btn:hover { 
-            color:var(--black); 
-        }
-
-        /* feed */
-        .feed {
-        flex: 1;
-        padding: 24px 40px;
-        }
-
-        .post {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        border-bottom: 1px solid #eee;
-        padding: 20px 0;
-        cursor: pointer;
-        }
-
-        .post-left {
-        max-width: 70%;
-        }
-
-        .price-box {
-        border: 1px solid #ddd;
-        padding: 8px 12px;
-        border-radius: 8px;
-        font-size: 14px;
-        font-weight: 500;
-        background: var(--light-gray);
-        }
-
-        .post h2 {
-        font-size: 16px;
-        margin-bottom: 6px;
-        }
-
-        .post p {
-        font-size: 14px;
-        color: var(--gray);
-        }
-
-        .badge {
-        display: inline-block;
-        font-size: 12px;
-        padding: 4px 8px;
-        border-radius: 6px;
-        margin-bottom: 8px;
-        }
-
-        .gig {
-            background: rgba(230,57,70,0.1);
-            color: var(--red); 
-        }
-        .learn {
-            background: #f1f1f1;
-            color: var(--black); 
-        }
-        .jam {
-            background: #111;
-            color: var(--white);
-        }
-
-    </style>
 </head>
 <body>
 
     <header>
         <i data-lucide="menu" class="icon-btn" id="menuBtn"></i>
         <h1 onclick="location.href='gigs.html'" onclick="location.href='gigs.html?view=gig'">Musiconn</h1>
-        <i data-lucide="user" class="icon-btn" onclick="location.href='profile.html'"></i>
+        <div class="right">
+          <i data-lucide="user" class="icon-btn" id="profileBtn"></i>
+        </div>
     </header>
 
     <div class="subheader">
         <h2 id="pageTitle">Gigs</h2>
-        <i data-lucide="sliders" class="icon-btn"></i>
     </div>
 
     <div class="container">
         <nav class="menu" id="sideMenu">
-            <a href="#" id="mapLink">Map</a>
-            <a href="gigs.html?view=gig">Gigs</a>
-            <a href="gigs.html?view=learn">Learn</a>
-            <a href="gigs.html?view=jam">Jam</a>
+            <a href="/" id="mapLink">Map</a>
+            <a href="/gigs?view=gig">Gigs</a>
+            <a href="/gigs?view=learn">Learn</a>
+            <a href="/gigs?view=jam">Jam</a>
         </nav>
 
         <main class="feed" id="feed"></main>
     </div>
 
+    <div class="add-btn" id="addPostBtn">
+        <i data-lucide="plus"></i>
+    </div>
+
+    <script src="/scripts/authFetch.js"></script>
     <script>
         lucide.createIcons();
+
+        const profileBtn = document.getElementById("profileBtn");
+
+        profileBtn.addEventListener("click", () => {
+          const username = sessionStorage.getItem("username");
+
+          if (!username) {
+            // fallback if not logged in
+            window.location.href = "/login";
+            return;
+          }
+
+          window.location.href = `/profile?username=${encodeURIComponent(username)}`;
+        });
+
+        const addPostBtn = document.getElementById("addPostBtn");
+
+        if (addPostBtn) {
+          addPostBtn.addEventListener("click", () => {
+            window.location.href = "/makepost";
+          });
+        }
 
         const menuBtn = document.getElementById('menuBtn');
         const sideMenu = document.getElementById('sideMenu');
@@ -276,19 +82,8 @@
         const feed = document.getElementById('feed');
         const pageTitle = document.getElementById('pageTitle');
 
-        const posts = [
-            { id: 1, type: 'gig', title: 'Looking for a drummer', desc: 'Paid gig this Friday', price: '$150–$250' },
-            { id: 2, type: 'gig', title: 'Jazz trio needed', desc: 'Restaurant residency', price: '$300–$400' },
-            { id: 3, type: 'gig', title: 'Wedding guitarist', desc: 'Ceremony + cocktail hour', price: '$500–$700' },
-            { id: 4, type: 'gig', title: 'Looking for a drummer', desc: 'Paid gig this Friday', price: '$150–$250' },
-            { id: 5, type: 'gig', title: 'Jazz trio needed', desc: 'Restaurant residency', price: '$300–$400' },
-            { id: 6, type: 'gig', title: 'Wedding guitarist', desc: 'Ceremony + cocktail hour', price: '$500–$700' },
-            { id: 7, type: 'gig', title: 'Looking for a drummer', desc: 'Paid gig this Friday', price: '$150–$250' },
-            { id: 8, type: 'gig', title: 'Jazz trio needed', desc: 'Restaurant residency', price: '$300–$400' },
-            { id: 9, type: 'gig', title: 'Wedding guitarist', desc: 'Ceremony + cocktail hour', price: '$500–$700' },
-            { id: 10, type: 'learn', title: 'Guitar lessons available', desc: 'Beginner friendly', price: '$40/hr' },
-            { id: 11, type: 'jam', title: 'Jam session tonight', desc: 'All instruments welcome', price: 'Free' }
-        ];
+        let posts = [];
+
 
         let currentView = 'gig';
 
@@ -297,7 +92,7 @@
             posts.filter(p => p.type === currentView).forEach(p => {
                 const div = document.createElement('div');
                 div.className = 'post';
-                div.onclick = () => location.href = 'post.html';
+                div.onclick = () => location.href = `/post?id=${encodeURIComponent(p.id)}`;
                 div.innerHTML = `
                     <div class="post-left">
                         <span class="badge ${p.type}">${p.type.toUpperCase()}</span>
@@ -308,6 +103,55 @@
                 `;
                 feed.appendChild(div);
             });
+        }
+
+        async function loadPosts() {
+          try {
+            const typeForServer =
+              currentView === "learn" ? "lesson" : currentView; // gig/jam are same
+
+            const res = await authFetch("/posts", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                location: { type: "Point", coordinates: [-71.1062, 42.4184] },
+                distanceMiles: 3958,
+                types: [typeForServer],
+              }),
+            });
+
+            const data = await res.json();
+            if (!res.ok) return console.error("Search failed:", data);
+
+            console.log(data);
+
+            renderPosts(data);
+        } catch (err) {
+            console.error(err);
+        }
+      }
+
+
+        function formatPrice(post) {
+          const low = Number(post.priceLowBound ?? 0);
+          const high = Number(post.priceHighBound ?? 0);
+
+          if (low === 0 && high === 0) return "Free";
+          if (low === high) return `$${low}`;
+          return `$${low}–$${high}`;
+        }
+
+        function renderPosts(serverPosts) {
+          // Convert backend objects -> the UI shape that renderFeed() expects
+          posts = (Array.isArray(serverPosts) ? serverPosts : []).map(p => ({
+            id: p._id ?? p.id,                         // backend uses _id
+            type: p.type === "lesson" ? "learn" : p.type, // your UI uses "learn" view
+            title: p.title ?? "(untitled)",
+            desc: p.description ?? "",
+            price: formatPrice(p),
+          }));
+
+          renderFeed();
         }
 
         // check url param for initial view
@@ -322,11 +166,12 @@
 
             document.querySelectorAll('.menu a').forEach(a => a.classList.remove('active'));
 
-            const link = document.querySelector(`.menu a[href="gigs.html?view=${initialView}"]`);
+            const link = document.querySelector(`.menu a[href="/gigs?view=${initialView}"]`);
+
             if (link) link.classList.add('active');
         }
 
-        renderFeed();
+        loadPosts();
     </script>
 
 </body>

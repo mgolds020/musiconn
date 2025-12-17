@@ -21,6 +21,21 @@ header {
     z-index: 1500; /* stays above content but below menu button */
 }
 
+/* generic header button positioning */
+.header-btn{
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 2000;
+}
+
+/* left + right placement */
+#menuBtn { left: 20px; }
+#profileBtn { right: 24px; }
+
+/* slide the MENU button when menu opens */
+body.menu-open #menuBtn { left: 244px; }
+
 /* center the title */
 header h1 {
     position: absolute;
@@ -32,18 +47,9 @@ header h1 {
     margin: 0;
 }
 
-/* MENU BUTTON — fixed so it can slide with menu */
-#menuBtn {
-    position: fixed;
-    top: 14px;
-    left: 20px;
-    z-index: 3000;
-    transition: left 0.3s ease;
-}
-
 /* slide menu button with menu */
 body.menu-open #menuBtn {
-    left: 244px;
+    left: 20px;
 }
 
 /* PROFILE ICON — right side, absolutely positioned */
@@ -74,21 +80,6 @@ header .icon-btn:last-of-type {
     left: 0;
 }
 
-/* Make menu button move with menu */
-#menuBtn {
-    position: fixed;
-    top: 16px;
-    left: 20px;
-    z-index: 2000;
-    transition: left 0.3s ease;
-}
-
-/* When menu is open, shift the button to the right */
-.menu.open ~ #menuBtn,
-.menu.open + #menuBtn {
-    left: 244px; /* 220px menu + some margin */
-}
-
 
 .menu a {
     display: block;
@@ -102,9 +93,20 @@ header .icon-btn:last-of-type {
 color: var(--red);
 }
 
-.icon-btn { 
-    cursor:pointer; 
-    color:var(--gray); 
+.icon-btn {
+  cursor: pointer;
+  color: var(--gray);
+  background: transparent;
+  border: 0;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: left;
+}
+
+.icon-btn--svg svg {
+  width: 22px;
+  height: 22px;
 }
 .icon-btn:hover { 
     color:var(--black); 
@@ -186,6 +188,11 @@ color: var(--red);
 .section-title {
     font-size:18px; font-weight:600;
     margin:12px 0 12px;
+}
+
+.card-title {
+    font-size:18px; font-weight:600;
+    margin:0px 0 12px;
 }
 
 /* posts carousel */
@@ -398,76 +405,76 @@ textarea { height:90px; resize:none; }
     background: #fafafa;
 }
 
-        .display-name {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .name-and-role{
-            display:flex;
-            align-items: baseline;   
-            gap:10px;
-            margin-top:12px;
-        }
-
-        .name{
-            font-size: 28px;
-            font-weight: 700;
-            line-height: 1.1;
-            margin: 0;             
-        }
-
-        .role-icon{
-            width: 20px;
-            height: 20px;
-            color: var(--gray);
-            position: relative;
-            top: 2px;              
-        }
-
-        .card{
-          background:#fff;
-          border:1px solid #eee;
-          border-radius: 14px;
-          padding: 16px;
-          margin-top: 12px;
-        }
-
-        .card--muted{
-          background: #fafafa;
-        }
-
-        .kv{
-          display:grid;
-          gap: 10px;
-          margin-top: 8px;
-        }
-
-        .kv-row{
-          display:grid;
-          grid-template-columns: 140px 1fr;
-          gap: 12px;
-          align-items: baseline;
-        }
-
-        .kv dt{
-          color: var(--gray);
-          font-size: 13px;
-          font-weight: 500;
-        }
-
-        .kv dd{
-          color: var(--black);
-          font-size: 14px;
-          font-weight: 600;
-        }
-
-        .role-pfp {
+.display-name {
     display: flex;
     align-items: center;
-    justify-content: center;
-    background: var(--light);
+    gap: 8px;
+}
+
+.name-and-role{
+    display:flex;
+    align-items: baseline;   
+    gap:10px;
+    margin-top:12px;
+}
+
+.name{
+    font-size: 28px;
+    font-weight: 700;
+    line-height: 1.1;
+    margin: 0;             
+}
+
+.role-icon{
+    width: 20px;
+    height: 20px;
+    color: var(--gray);
+    position: relative;
+    top: 2px;              
+}
+
+.card{
+  background:#fff;
+  border:1px solid #eee;
+  border-radius: 14px;
+  padding: 16px;
+  margin-top: 12px;
+}
+
+.card--muted{
+  background: #fafafa;
+}
+
+.kv{
+  display:grid;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.kv-row{
+  display:grid;
+  grid-template-columns: 140px 1fr;
+  gap: 12px;
+  align-items: baseline;
+}
+
+.kv dt{
+  color: var(--gray);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.kv dd{
+  color: var(--black);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.role-pfp {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--light);
 }
 
 /* Bigger icon for avatar */
@@ -489,4 +496,86 @@ textarea { height:90px; resize:none; }
 
 .role-pfp.listener {
     background: rgba(102, 102, 102, 0.12);
+}
+
+.edit-profile-btn {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,0.6);
+
+  background: rgba(0,0,0,0.25);
+  color: white;
+
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+
+  backdrop-filter: blur(6px);
+}
+
+.edit-profile-btn:hover {
+  background: rgba(0,0,0,0.35);
+}
+
+.pfp-wrap {
+    position: relative;
+    width: 110px;
+    height: 110px;
+}
+
+/* existing */
+.pfp {
+    width: 110px;
+    height: 110px;
+    border-radius: 50%;
+    background: #eee;
+    border: 4px solid white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.status-bubble {
+    position: absolute;
+    bottom: 100%;
+    left: 75%;                 
+    transform: translateX(-50%);
+    margin-bottom: 18px;       
+
+    max-width: min(280px, calc(100vw - 32px));
+    white-space: normal;
+    line-height: 1.35;
+
+    background: white;
+    border: 1px solid #eee;
+    border-radius: 999px;
+    padding: 6px 12px;
+
+    font-size: 13px;
+    color: var(--gray);
+    white-space: nowrap;
+
+    box-shadow: 0 6px 20px rgba(0,0,0,0.12);
+    z-index: 5;
+}
+
+.status-bubble span {
+    font-weight: 500;
+}
+
+
+.status-bubble::before {
+    content: "";
+    position: absolute;
+    top: 100%;
+    left: 18%;
+    width: 6px;
+    height: 6px;
+    background: white;
+    border-radius: 50%;
+    box-shadow: 8px 8px 0 -2px white;
 }

@@ -15,17 +15,23 @@
 <body>
 
     <header>
-        <i data-lucide="menu" class="icon-btn" id="menuBtn"></i>
-        <h1 onclick="location.href='gigs.html?view=gig'">Musiconn</h1> <!-- make this go to map view -->
-        <i data-lucide="user" class="icon-btn"></i>
+    <button class="icon-btn header-btn" id="menuBtn" type="button" aria-label="Menu">
+        <i data-lucide="menu"></i>
+    </button>
+
+    <h1 onclick="location.href='gigs.html?view=gig'">Musiconn</h1>
+
+    <button class="icon-btn header-btn" id="profileBtn" type="button" aria-label="Profile">
+        <i data-lucide="user"></i>
+    </button>
     </header>
 
     <div class="container">
         <nav class="menu" id="sideMenu">
-            <a href="#">Map</a>
-            <a href="gigs.html?view=gig">Gigs</a>
-            <a href="gigs.html?view=learn">Learn</a>
-            <a href="gigs.html?view=jam">Jam</a>
+            <a href="/">Map</a>
+            <a href="/gigs?view=gig">Gigs</a>
+            <a href="/gigs?view=learn">Learn</a>
+            <a href="/gigs?view=jam">Jam</a>
         </nav>
 
         <main class="feed" id="feed"></main>
@@ -40,23 +46,29 @@
                 </svg>
             </div>
         </div>
+        <button class="edit-profile-btn" id="editProfileBtn">
+            Edit profile
+        </button>
     </div>
 
     <div class="profile-container">
-        <div class="pfp role-pfp">
-            <i id="roleIcon" class="role-icon"></i>
+        <div class="pfp-wrap">
+    <div class="pfp role-pfp">
+        <i id="roleIcon" class="role-icon"></i>
+    </div>
+
+    <div class="status-bubble" id="statusBubble" style="display:none;">
+        <span id="statusText"></span>
+    </div>
+
         </div>
         
         <div class="name-and-role">
             <div class="name" id="displayName"></div>
+            <i id="instructorIcon" class="role-icon" style="display:none;"></i>
         </div>
         <div class="stageandlegalname" id="morenames"></div>
         <div class="bio" id="bioText"></div>
-
-        <section class="card">
-            <div class="card-title">Info</div>
-            <div id="roleDetails"></div>
-        </section>
 
         <section class="card card--muted">
             <h3 class="card-title">Contact</h3>
@@ -88,16 +100,22 @@
 
                 <div class="section-title">Posts</div>
 
-                <!-- FIXED-WIDTH CAROUSEL -->
-                <div class="posts-carousel-wrapper" style="position:relative; width:100%; overflow:hidden;">
-
-                    <button class="posts-arrow left" id="postsLeft" style="position:absolute; left:0; top:50%; transform:translateY(-50%); border-radius:999px; border:1px solid #ddd; background:white; padding:6px 12px; box-shadow:0 2px 6px rgba(0,0,0,0.15); cursor:pointer; z-index:5;">◀</button>
-                    <div class="carousel" id="postCarousel"
-                    style="display:flex; flex-wrap:nowrap; gap:16px; overflow-x:auto; overflow-y:hidden;
-                            scroll-behavior:smooth; white-space:nowrap;
-                            padding:10px 48px; min-width:0;"></div>
-                    <button class="posts-arrow right" id="postsRight" style="position:absolute; right:0; top:50%; transform:translateY(-50%); border-radius:999px; border:1px solid #ddd; background:white; padding:6px 12px; box-shadow:0 2px 6px rgba(0,0,0,0.15); cursor:pointer; z-index:5;">▶</button>
+                <div id="noPosts" class="empty-state" style="display:none;">
+                No posts yet
                 </div>
+
+                <div class="posts-carousel-wrapper" id="postsCarouselWrap" style="position:relative; width:100%; overflow:hidden;">
+                <button class="posts-arrow left" id="postsLeft" style="position:absolute; left:0; top:50%; transform:translateY(-50%); border-radius:999px; border:1px solid #ddd; background:white; padding:6px 12px; box-shadow:0 2px 6px rgba(0,0,0,0.15); cursor:pointer; z-index:5;">◀</button>
+
+                <div class="carousel" id="postCarousel"
+                    style="display:flex; flex-wrap:nowrap; gap:16px; overflow-x:auto; overflow-y:hidden;
+                    scroll-behavior:smooth; white-space:nowrap;
+                    padding:10px 48px; min-width:0;">
+                </div>
+
+                <button class="posts-arrow right" id="postsRight" style="position:absolute; right:0; top:50%; transform:translateY(-50%); border-radius:999px; border:1px solid #ddd; background:white; padding:6px 12px; box-shadow:0 2px 6px rgba(0,0,0,0.15); cursor:pointer; z-index:5;">▶</button>
+                </div>
+
             </div>
         </div>
     </div>
@@ -107,64 +125,33 @@
         <i data-lucide="plus"></i>
     </div>
 
-    <!-- create post pop-up -->
-    <div class="modal-bg" id="modalBg">
-        <div class="modal">
-            <h2>Create Post</h2>
-
-            <div class="field">
-                <label>Title</label>
-                <input type="text" id="postTitle">
-            </div>
-
-            <div class="field">
-                <label>Type</label>
-                <select id="postType">
-                    <option value="gig">Gig</option>
-                    <option value="learn">Learn</option>
-                    <option value="jam">Jam</option>
-                </select>
-            </div>
-
-            <div class="field">
-                <label>Date & Time</label>
-                <input type="text" id="postDate" placeholder="Feb 12, 2026 @ 8pm">
-            </div>
-
-            <div class="field">
-                <label>Location</label>
-                <input type="text" id="postLocation">
-            </div>
-
-            <div class="field">
-                <label>Price</label>
-                <input type="text" id="postPrice">
-            </div>
-
-            <div class="field">
-                <label>Description</label>
-                <textarea id="postDesc"></textarea>
-            </div>
-
-            <button class="save-btn" id="savePostBtn">Save Post</button>
-        </div>
-    </div>
-
     <script>
         // icons + menu wiring
         if (window.lucide) {
             lucide.createIcons();
         }
 
-        let isOwner = false; // later check auth
+        const params1 = new URLSearchParams(window.location.search);
+        const username1 = params1.get("username");
+
+        const loggedInUsername = sessionStorage.getItem("username");
+        const isOwner = loggedInUsername === username1;
+
+        const editBtn = document.getElementById("editProfileBtn");
+
+        if (!isOwner) {
+            // Hide button if not your profile
+            if (editBtn) editBtn.style.display = "none";
+            } else if (editBtn) {
+            editBtn.onclick = () => {
+                window.location.href = `/editprofile?username=${encodeURIComponent(username)}`
+            };
+        }
 
         if (!isOwner) {
             document.querySelectorAll('[contenteditable]').forEach(el => {
                 el.setAttribute('contenteditable', 'false');
             });
-
-            const pfpUpload = document.getElementById('pfpUpload');
-            if (pfpUpload) pfpUpload.style.display = 'none';
 
             const addPostBtn = document.getElementById('addPostBtn');
             if (addPostBtn) addPostBtn.style.display = 'none';
@@ -175,14 +162,17 @@
             document.getElementById('tagContainer').classList.add('readonly');
         }
 
-        const menuBtn = document.getElementById('menuBtn');
-        const sideMenu = document.getElementById('sideMenu');
+        const menuBtn = document.getElementById("menuBtn");
+        const sideMenu = document.getElementById("sideMenu");
 
         if (menuBtn && sideMenu) {
-            menuBtn.addEventListener('click', () => {
-                sideMenu.classList.toggle('open');
-            });
+        menuBtn.addEventListener("click", () => {
+            const open = !document.body.classList.contains("menu-open");
+            sideMenu.classList.toggle("open", open);
+            document.body.classList.toggle("menu-open", open);
+        });
         }
+
 
         // POSTS loaded from backend
         const POSTS = [];
@@ -211,7 +201,7 @@
 
                 // card click → post page
                 card.onclick = () => {
-                    location.href = `post.html?id=${p.id}`;
+                    location.href = `/post?id=${p.id}`;
                 };
 
                 // ONLY attach handlers if owner
@@ -274,11 +264,7 @@
 
         if (isOwner && addPostBtn) {
             addPostBtn.onclick = () => {
-                currentEditId = null;
-                document.getElementById('postTitle').value = '';
-                document.getElementById('postDesc').value = '';
-                document.getElementById('postType').value = 'gig';
-                modalBg.style.display = 'flex';
+                window.location.href = "/makepost";
             };
         } else if (addPostBtn) {
             addPostBtn.style.display = 'none';
@@ -325,17 +311,6 @@
             }
         });
 
-
-        // pfp upload WIP
-        const pfpUpload=document.getElementById('pfpUpload');
-        const pfpDisplay=document.getElementById('pfpDisplay');
-        if(pfpUpload) pfpUpload.onchange=e=>{
-            const file=e.target.files[0];
-            if(file){
-                pfpDisplay.style.background=`url(${URL.createObjectURL(file)}) center/cover`;
-            }
-        };
-
         // gallery upload WIP
         const galleryUpload=document.getElementById('galleryUpload');
         const gallery=document.getElementById('gallery');
@@ -374,6 +349,7 @@
 
     </script>
 
+    <script src="/scripts/authFetch.js"></script>
     <!-- Fill info from db -->
     <script>
         // read ?username=
@@ -396,35 +372,63 @@
         }
 
         function renderUser(u) {
-            // Base fields
             setText("displayName", u.username);
             setText("bioText", u.bio || "");
             setText("emailText", u?.contactInfo?.email || "");
             setText("legalNameText", u?.contactInfo?.name || "");
 
-        
             const roleBox = document.getElementById("roleDetails");
             if (roleBox) roleBox.innerHTML = "";
 
+            const instructorIcon = document.getElementById("instructorIcon");
+            if (instructorIcon) instructorIcon.style.display = "none";
+
             if (u.role === "artist" && u.artistProfile) {
-                setText("displayName", u.artistProfile.stageName)
+                setText("displayName", u.artistProfile.stageName || u.username);
+
+                // show pencil icon if instructor
+                if (u.artistProfile.isInstructor && instructorIcon) {
+                    instructorIcon.setAttribute("data-lucide", "pencil");
+                    instructorIcon.style.display = "inline-flex";
+                }
+            } 
+            else if (u.role === "band" && u.bandProfile) {
+                setText("displayName", u.bandProfile.name || u.username);
 
                 if (roleBox) roleBox.innerHTML = `
-                    <div><strong>Status:</strong> ${u.artistProfile.status || ""}</div>
-                    <div><strong>Instructor:</strong> ${u.artistProfile.isInstructor ? "Yes" : "No"}</div>
+                    <div><strong>Band status:</strong> ${u.bandProfile.status || ""}</div>
+                    <div><strong>Members:</strong> ${u.bandProfile.members?.length || 0}</div>
                 `;
-            } else if (u.role === "band" && u.bandProfile) {
-            // Use band name as main display name
-            setText("displayName", u.bandProfile.name || u.username);
-
-            if (roleBox) roleBox.innerHTML = `
-                <div><strong>Band status:</strong> ${u.bandProfile.status || ""}</div>
-                <div><strong>Members:</strong> ${u.bandProfile.members || 0}</div>
-            `;
-            } else {
-            if (roleBox) roleBox.innerHTML = `<div>This user is a listener.</div>`;
+            } 
+            else {
+                if (roleBox) roleBox.innerHTML = `<div>This user is a listener.</div>`;
             }
+
+            // Re-render icons after setting data-lucide
+            lucide.createIcons();
         }
+
+        function renderStatusBubble(u) {
+            const bubble = document.getElementById("statusBubble");
+            const text = document.getElementById("statusText");
+            if (!bubble || !text) return;
+
+            let status = "";
+
+            if (u.role === "artist") status = u.artistProfile?.status || "";
+            else if (u.role === "band") status = u.bandProfile?.status || "";
+            else status = ""; // listeners: hide bubble
+
+            if (!status) {
+                bubble.style.display = "none";
+                return;
+            }
+
+            text.textContent = status;
+            bubble.style.display = "inline-flex";
+        }
+
+
 
         function addTag(tagContainer, label) {
             const span = document.createElement("span");
@@ -489,22 +493,32 @@
         }
 
         function renderPosts(postsFromServer) {
-            POSTS.length = 0; // clear existing posts
+            const noPostsEl = document.getElementById("noPosts");
+            const wrap = document.getElementById("postsCarouselWrap");
 
-            postsFromServer.forEach(p => {
+            POSTS.length = 0;
+
+            (Array.isArray(postsFromServer) ? postsFromServer : []).forEach(p => {
                 POSTS.push({
-                    id: p._id,
-                    title: p.title || "(untitled)",
-                    desc: p.description || ""
+                id: p._id,
+                title: p.title || "(untitled)",
+                desc: p.description || ""
                 });
             });
 
-            loadCarousel();
+            // toggle empty state vs carousel
+            const hasPosts = POSTS.length > 0;
+
+            if (wrap) wrap.style.display = hasPosts ? "block" : "none";
+            if (noPostsEl) noPostsEl.style.display = hasPosts ? "none" : "block";
+
+            if (hasPosts) loadCarousel();
         }
+
 
         async function loadProfile() {
             try {
-                const res = await fetch(`/users?username=${encodeURIComponent(username)}`);
+                const res = await authFetch(`/users?username=${encodeURIComponent(username)}`);
                 const data = await res.json();
 
                 if (!res.ok) {
@@ -517,6 +531,8 @@
                 renderRoleIcon(data);
                 renderTags(data);
                 loadPosts(data);
+                renderStatusBubble(data);
+
 
             } catch (err) {
                 console.error(err);
@@ -526,7 +542,7 @@
         
         async function loadPosts(user) {
             try {
-                const res = await fetch(`/posts?userid=${user._id}`);
+                const res = await authFetch(`/posts?userid=${user._id}`);
                 const data = await res.json();
 
                 if (!res.ok) {

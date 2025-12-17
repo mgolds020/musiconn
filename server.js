@@ -43,9 +43,8 @@ http.createServer((req, res) => {
     }
 
     if (path === "/" && req.method === "GET") {
-        authenticateToken(req, res, (tokenInfo) => {
-            loadFile("views/map.html", res);
-        })
+        
+        loadFile("views/map.html", res);
 
     } else if (path === "/login" && req.method === "GET") {
 
@@ -56,19 +55,19 @@ http.createServer((req, res) => {
         loadFile("views/signup.html", res);
 
     } else if (path === "/gigs" && req.method === "GET") {
-        authenticateToken(req, res, (tokenInfo) => {
-            loadFile("views/gigs.html", res);
-        });
+        
+        loadFile("views/gigs.html", res);
+   
 
     } else if (path === "/profile" && req.method === "GET") {
-        authenticateToken(req, res, (tokenInfo) => {
-            loadFile("views/profile.html", res);
-        });
+    
+        loadFile("views/profile.html", res);
+    
     
     } else if (path === "/editprofile" && req.method === "GET") {
-        authenticateToken(req, res, (tokenInfo) => {
-            loadFile("views/edit-profile.html", res);
-        });
+        
+        loadFile("views/edit-profile.html", res);
+        
 
     } else if (path === "/users" && req.method === "GET") {
         authenticateToken(req, res, () => {
@@ -158,23 +157,21 @@ http.createServer((req, res) => {
         });
 
     } else if (path === "/map" && req.method === "GET") {
-        authenticateToken(req, res, (tokenInfo) => {
-            loadFile("views/map.html", res);
-        })
+        
+        loadFile("views/map.html", res);
 
     } else if (path === '/makepost' && req.method === 'GET' ) {
-        authenticateToken(req, res, (tokenInfo) => {
-            loadFile("views/makepost.html", res);
-        });
+        
+        loadFile("views/makepost.html", res);
+        
 
     } else if (path === '/post' && req.method === 'GET' ) {
 
-        authenticateToken(req, res, (tokenInfo) => {
-            loadFile("views/post.html", res);
-        });
+        loadFile("views/post.html", res);
+        
 
     } else if (path === '/post/id' && req.method === 'GET' ) {
-        authenticateToken(req, res, (tokenInfo) => {
+        
             const qObj = urlObj.parse(req.url, true).query;
             const idRaw = qObj.postid;
             if (!idRaw) return jsonResponse(res, 400, { error: "Bad Request: Missing User ID"});
@@ -200,7 +197,6 @@ http.createServer((req, res) => {
                     client.close();
                 });
             });
-        });
 
     }else if (path === "/posts" && req.method === "POST") {
         authenticateToken(req, res, (tokenInfo) => {
@@ -220,6 +216,7 @@ http.createServer((req, res) => {
                 const miles = Number(body?.distanceMiles ?? 20);
                 const distance = miles / 3958.8; // miles → radians
                 const types = body?.types;
+                
 
                 if (!Number.isFinite(lon) || !Number.isFinite(lat)) {
                     return jsonResponse(res, 400, {
@@ -353,8 +350,6 @@ http.createServer((req, res) => {
                 console.log("HEADERS:", req.headers);
                 console.log("RAW BODY:", myFormData);
                 console.log("======================================");
-
-    
 
             const parsedData = qs.parse(myFormData);
             console.log("PARSED form data:", parsedData);
@@ -551,7 +546,7 @@ function createUserUpdateQuery(res, body, existingUser) {
     }
 
     const newContactInfo = body.contactInfo;
-    if(newContactInfo) updatecontactInfo($set, existingUser.contactInfo, newContactInfo);
+    if(newContactInfo) updateContactInfo($set, existingUser.contactInfo, newContactInfo);
 
     const newBio = body.bio;
     if(newBio && newBio !== existingUser.bio) $set.bio = newBio;
@@ -585,9 +580,9 @@ function updateBandProfile($set, oldProf, newProf) {
     if(newProf.status && oldProf.status !== newProf.status) $set["bandProfile.status"] = newProf.status;
 }
 
-function updateContactInfo($set, oldProf, newProf) {
-    if(newProf.email && oldProf.email !== newProf.email) $set["contactInfo.email"] = newProf.email;
-    if(newProf.name && oldProf.name !== newProf.name) $set["contactInfo.name"] = newProf.name;
+function updateContactInfo($set, oldProf = {}, newProf = {}) {
+    if(newProf.email && (oldProf.email !== newProf.email)) $set["contactInfo.email"] = newProf.email;
+    if(newProf.name && (oldProf.name !== newProf.name)) $set["contactInfo.name"] = newProf.name;
 }
 
-const sameArray = (a,b) => Array.isArray(a) && Array.isArray(b) && a.length === b.length && a.every((value, index) => v === b[i]);
+const sameArray = (a,b) => Array.isArray(a) && Array.isArray(b) && a.length === b.length && a.every((value, index) => value === b[index]);

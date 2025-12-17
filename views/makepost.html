@@ -261,6 +261,8 @@
     </div>
   </main>
 
+
+  <script src="/scripts/authFetch.js"></script>
   <script>
   lucide.createIcons();
 
@@ -403,11 +405,11 @@
     const longitude = coords.lng;
     const latitude = coords.lat;
 
-    const accessToken = sessionStorage.getItem("accessToken");
-    if (!accessToken) {
-      errorText.textContent = "You must be logged in to create a post.";
-      return;
-    }
+    // const accessToken = sessionStorage.getItem("accessToken");
+    // if (!accessToken) {
+    //   errorText.textContent = "You must be logged in to create a post.";
+    //   return;
+    // }
 
     const post = {
       type,
@@ -431,11 +433,11 @@
     }
 
     try {
-      const res = await fetch("/posts/create", {
+      // TODO SECURE
+      const res = await authFetch("/posts/create", {
         method: "POST",
         headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-          "Authorization": `Bearer ${accessToken}`
+          "Content-Type": "application/x-www-form-urlencoded"
         },
         body: new URLSearchParams({
           post: JSON.stringify(post)   // server expects qs.parse(...).post

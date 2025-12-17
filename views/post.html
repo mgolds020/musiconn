@@ -7,6 +7,7 @@
 
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/lucide@latest"></script>
+  
 
   <style>
     :root {
@@ -162,16 +163,16 @@
 <body>
   <header>
     <i data-lucide="menu" class="icon-btn" id="menuBtn"></i>
-    <h1 onclick="location.href='gigs.html?view=gig'">Musiconn</h1>
-    <i data-lucide="user" class="icon-btn" onclick="location.href='profile.html'"></i>
+    <h1 onclick="location.href='/gigs?view=gig'">Musiconn</h1>
+    <i data-lucide="user" class="icon-btn" onclick="location.href='/profile'"></i>
   </header>
 
   <div class="container">
     <nav class="menu" id="sideMenu">
       <a href="map.html">Map</a>
-      <a href="gigs.html?view=gig">Gigs</a>
-      <a href="gigs.html?view=learn">Learn</a>
-      <a href="gigs.html?view=jam">Jam</a>
+      <a href="/gigs?view=gig">Gigs</a>
+      <a href="/gigs?view=learn">Learn</a>
+      <a href="/gigs?view=jam">Jam</a>
     </nav>
 
     <div class="back" onclick="history.back()">
@@ -271,7 +272,10 @@
     }
 
     async function fetchPostById(postId) {
-        return fetch(`/post/id?postid=${encodeURIComponent(postId)}`);
+        return fetch(`/post/id?postid=${encodeURIComponent(postId)}`, {
+          method: 'GET',
+          headers: { "Accept": "application/json"}
+        });
     }
 
 
@@ -280,7 +284,7 @@
       const c = document.getElementById("postContainer");
 
       if (!postId) {
-        c.innerHTML = `<div class="muted">No post id provided. Open this page like <b>post.html?id=...</b></div>`;
+        c.innerHTML = `<div class="muted">No post id provided. Open this page like <b>/post?id=...</b></div>`;
         return;
       }
 

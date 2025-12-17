@@ -23,7 +23,7 @@
       <h1>Musiconn</h1>
 
       <div class="right">
-        <i data-lucide="user" class="icon-btn" onclick="location.href='profile.html'"></i>
+        <i data-lucide="user" class="icon-btn" id="profileBtn"></i>
       </div>
     </header>
 
@@ -65,9 +65,24 @@
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="/scripts/authFetch.js"></script>
 
     <script>
       lucide.createIcons();
+
+      const profileBtn = document.getElementById("profileBtn");
+
+      profileBtn.addEventListener("click", () => {
+        const username = sessionStorage.getItem("username");
+
+        if (!username) {
+          // fallback if not logged in
+          window.location.href = "/login";
+          return;
+        }
+
+        window.location.href = `/profile?username=${encodeURIComponent(username)}`;
+      });
 
       // ----- MENU TOGGLE -----
       const menuBtn = document.getElementById("menuBtn");
@@ -239,7 +254,7 @@
         const radiusMiles = Math.min(currentRadiusMiles(), MAX_RADIUS_MILES);
 
         try {
-          const res = await fetch("/posts", {
+          const res = await authFetch("/posts", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
