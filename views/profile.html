@@ -22,7 +22,7 @@
     <h1 onclick="location.href='/'">Musiconn</h1>
 
     <button class="icon-btn header-btn" id="profileBtn" type="button" aria-label="Profile">
-        <i data-lucide="user"></i>
+            <i data-lucide="user" class="icon-btn" id="profileBtn" onclick="location.href='/profile'"></i>
     </button>
     </header>
 
@@ -153,6 +153,19 @@
                 window.location.href = `/editprofile?username=${encodeURIComponent(username)}`
             };
         }
+
+        const profileBtn = document.getElementById("profileBtn");
+            profileBtn.addEventListener("click", () => {
+            const username = sessionStorage.getItem("username");
+
+            if (!username) {
+                // fallback if not logged in
+                window.location.href = "/login";
+                return;
+            }
+
+            window.location.href = `/profile?username=${encodeURIComponent(username)}`;
+        });
 
         if (!isOwner) {
             document.querySelectorAll('[contenteditable]').forEach(el => {

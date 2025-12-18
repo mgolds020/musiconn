@@ -164,7 +164,7 @@
   <header>
     <i data-lucide="menu" class="icon-btn" id="menuBtn"></i>
     <h1 onclick="location.href='/'">Musiconn</h1>
-    <i data-lucide="user" class="icon-btn" onclick="location.href='/profile'"></i>
+    <i data-lucide="user" class="icon-btn" id="profileBtn" onclick="location.href='/profile'"></i>
   </header>
 
   <div class="container">
@@ -198,6 +198,19 @@
         document.body.classList.toggle("menu-open", sideMenu.classList.contains("open"));
       });
     }
+
+    const profileBtn = document.getElementById("profileBtn");
+    profileBtn.addEventListener("click", () => {
+      const username = sessionStorage.getItem("username");
+
+      if (!username) {
+        // fallback if not logged in
+        window.location.href = "/login";
+        return;
+      }
+
+      window.location.href = `/profile?username=${encodeURIComponent(username)}`;
+    });
 
     function getQueryParam(name) {
       return new URLSearchParams(window.location.search).get(name);
