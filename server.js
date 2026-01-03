@@ -37,13 +37,8 @@ function handleCORS(req, res) {
   return false;
 }
 
-http.createServer((req, res) => {
 
-    if (handleCORS(req, res)) return;
-
-    // res.writeHead(200, {'Content-Type': 'text/html'});
-    const path = urlObj.parse(req.url).pathname;
-
+function serveAssets(res, path) {
     // Serve files for assets requested by pages (css/js/images)
     // Example: browser requests /styles/map.css -> serve ./styles/map.css
     if (path && (path.startsWith('/styles/') || path.startsWith('/scripts/') || path.startsWith('/images/') || path.match(/\.(css|js|png|jpg|jpeg|svg)$/))) {
@@ -67,8 +62,16 @@ http.createServer((req, res) => {
         });
         return;
     }
+}
 
-       if (path === '/signup' && req.method === 'GET') {
+http.createServer((req, res) => {
+
+    // pre-routing setup
+    if (handleCORS(req, res)) return;
+    const path = urlObj.parse(req.url).pathname;
+    serveAssets(res, path);
+
+    if (path === '/signup' && req.method === 'GET') {
         
         // render the signup view
         loadFile('views/signup.html', res);
@@ -877,4 +880,12 @@ function clearRefreshCookie(res) {
     "Set-Cookie",
     "refreshToken=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0"
   );
+}
+
+function parsePostData(req, res, callback) {
+    const myFormData = '';
+    req.on('data', newData => { myFormData += newData.toString(); });
+    req.on('end', () => {
+        callback(myFormData);
+    });
 }
